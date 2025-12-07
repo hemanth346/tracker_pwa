@@ -1,17 +1,18 @@
 // Service Worker for P2P Lending Tracker PWA
 const CACHE_NAME = 'p2p-lending-v1';
-const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/css/styles.css',
-    '/js/app.js',
-    '/js/auth.js',
-    '/js/sheets.js',
-    '/js/drive.js',
-    '/js/ui.js',
-    '/images/icons/icon-192x192.png',
-    '/images/icons/icon-512x512.png'
+const urlsToCache = [
+    './',
+    './index.html',
+    './css/styles.css',
+    './js/app.js',
+    './js/auth.js',
+    './js/sheets.js',
+    './js/drive.js',
+    './js/ui.js',
+    './config.js',
+    './manifest.json',
+    './images/icons/icon-192x192.png',
+    './images/icons/icon-512x512.png'
 ];
 
 // Install event - cache assets
