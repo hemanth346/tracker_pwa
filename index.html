@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Track your peer-to-peer lending activities with ease">
+  <meta name="theme-color" content="#6366f1">
+  
+  <title>P2P Lending Tracker</title>
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="/manifest.json">
+  
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="192x192" href="/images/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/images/icons/icon-192x192.png">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <!-- Main App Container -->
+  <div class="app">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="container">
+        <div class="header-content">
+          <div class="app-logo">
+            <span>💰</span>
+            <span>P2P Lender</span>
+          </div>
+          
+          <div class="flex items-center gap-md">
+            <button id="install-btn" class="btn btn-secondary btn-sm hidden">Install App</button>
+            <button id="open-sheet-btn" class="btn btn-secondary btn-sm hidden" title="Open in Google Sheets">
+              📊 Open Sheet
+            </button>
+            <div id="user-info" class="flex items-center gap-sm hidden">
+              <img id="user-avatar" src="" alt="" style="width: 32px; height: 32px; border-radius: 50%;">
+              <span id="user-name" class="text-sm"></span>
+              <button id="sign-out-btn" class="btn btn-secondary btn-sm">Sign Out</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <div class="container">
+        <!-- Auth View -->
+        <div id="auth-view" class="view">
+          <div class="card text-center" style="max-width: 500px; margin: 4rem auto;">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">💰</div>
+            <h1>P2P Lending Tracker</h1>
+            <p class="text-secondary mb-xl">Track your peer-to-peer lending activities with ease. Sign in with Google to get started.</p>
+            <button id="sign-in-btn" class="btn btn-primary" style="margin: 0 auto;">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-right: 0.5rem;">
+                <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.18L12.05 13.56c-.806.54-1.836.86-3.047.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9.003 18z" fill="#34A853"/>
+                <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
+              </svg>
+              Sign in with Google
+            </button>
+            
+            <div class="mt-xl">
+              <h3 class="mb-md">Features</h3>
+              <div class="grid grid-2 text-left">
+                <div>
+                  <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📊</div>
+                  <strong>Track Loans</strong>
+                  <p class="text-sm text-secondary">Manage all your P2P lending activities</p>
+                </div>
+                <div>
+                  <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">💵</div>
+                  <strong>Record Payments</strong>
+                  <p class="text-sm text-secondary">Track interest and principal payments</p>
+                </div>
+                <div>
+                  <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">📱</div>
+                  <strong>Works Offline</strong>
+                  <p class="text-sm text-secondary">Access your data anytime, anywhere</p>
+                </div>
+                <div>
+                  <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">☁️</div>
+                  <strong>Google Sheets</strong>
+                  <p class="text-sm text-secondary">Data stored in your Google Drive</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading View -->
+        <div id="loading-view" class="view hidden">
+          <div class="text-center" style="padding: 4rem;">
+            <div class="spinner" style="margin: 0 auto 2rem;"></div>
+            <p class="text-secondary">Loading your data...</p>
+          </div>
+        </div>
+
+        <!-- Loans View -->
+        <div id="loans-view" class="view hidden">
+          <div class="flex justify-between items-center mb-lg">
+            <h2>Loans</h2>
+            <button id="add-loan-btn" class="btn btn-primary">+ Add Loan</button>
+          </div>
+          
+          <div id="loans-list"></div>
+        </div>
+
+        <!-- Payments View -->
+        <div id="payments-view" class="view hidden">
+          <div class="flex justify-between items-center mb-lg">
+            <h2>Interest Payments</h2>
+            <button id="add-payment-btn" class="btn btn-primary">+ Record Payment</button>
+          </div>
+          
+          <div id="payments-list"></div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settings-view" class="view hidden">
+          <h2 class="mb-lg">Settings</h2>
+          
+          <div class="card">
+            <h3 class="card-title">Data Management</h3>
+            
+            <div class="mb-md">
+              <button id="open-sheet-settings" class="btn btn-secondary" onclick="ui.openSpreadsheet()">
+                📊 Open Google Sheet
+              </button>
+              <p class="text-sm text-secondary mt-sm">View and edit your data directly in Google Sheets</p>
+            </div>
+            
+            <div class="mb-md">
+              <button id="open-drive-folder" class="btn btn-secondary" onclick="ui.openDriveFolder()">
+                📁 Open Attachments Folder
+              </button>
+              <p class="text-sm text-secondary mt-sm">View all uploaded images in Google Drive</p>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;">
+            
+            <h3 class="card-title">About</h3>
+            <p class="text-secondary">P2P Lending Tracker v1.0</p>
+            <p class="text-sm text-secondary">A progressive web app for managing peer-to-peer lending activities</p>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+      <div class="bottom-nav-content">
+        <div class="nav-item active" data-view="loans">
+          <div class="nav-icon">💰</div>
+          <div class="nav-label">Loans</div>
+        </div>
+        <div class="nav-item" data-view="payments">
+          <div class="nav-icon">💵</div>
+          <div class="nav-label">Payments</div>
+        </div>
+        <div class="nav-item" data-view="settings">
+          <div class="nav-icon">⚙️</div>
+          <div class="nav-label">Settings</div>
+        </div>
+      </div>
+    </nav>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Configuration -->
+  <script src="/config.js"></script>
+  
+  <!-- Scripts -->
+  <script src="/js/auth.js"></script>
+  <script src="/js/sheets.js"></script>
+  <script src="/js/drive.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/app.js"></script>
+
+  <script>
+    // Show user info and buttons when authenticated
+    window.addEventListener('auth:success', () => {
+      document.getElementById('user-info').classList.remove('hidden');
+      document.getElementById('open-sheet-btn').classList.remove('hidden');
+    });
+
+    window.addEventListener('auth:signout', () => {
+      document.getElementById('user-info').classList.add('hidden');
+      document.getElementById('open-sheet-btn').classList.add('hidden');
+    });
+  </script>
+</body>
+</html>
