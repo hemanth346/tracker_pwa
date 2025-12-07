@@ -1,4 +1,4 @@
-// Configuration for P2P Lending Tracker
+// Configuration for Loan Tracker
 // IMPORTANT: Replace YOUR_GOOGLE_CLIENT_ID_HERE with your actual Client ID from Google Cloud Console
 
 const CONFIG = {
@@ -17,9 +17,9 @@ const CONFIG = {
     ],
 
     // App Settings
-    APP_NAME: 'P2P Lending Tracker',
-    SPREADSHEET_NAME: 'P2P Lending Data',
-    DRIVE_FOLDER_NAME: 'P2P Lending Attachments'
+    APP_NAME: 'Loan Tracker',
+    SPREADSHEET_NAME: 'Loan Data',
+    DRIVE_FOLDER_NAME: 'Loan Attachments'
 };
 
 // Export for use in other modules

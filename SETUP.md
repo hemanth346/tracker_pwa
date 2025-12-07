@@ -1,14 +1,14 @@
-# P2P Lending Tracker - Setup Guide
+# Loan Tracker - Setup Guide
 
 ## Quick Start
 
-Your P2P Lending Tracker PWA is ready! Follow these steps to set it up:
+Your Loan Tracker PWA is ready! Follow these steps to set it up:
 
 ### Step 1: Create Google Cloud Project (5 minutes)
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Click **"Select a project"** → **"New Project"**
-3. Enter project name: `P2P Lending Tracker`
+3. Enter project name: `Loan Tracker`
 4. Click **"Create"**
 
 ### Step 2: Enable Required APIs (3 minutes)
@@ -24,7 +24,7 @@ Your P2P Lending Tracker PWA is ready! Follow these steps to set it up:
 2. Click **"+ CREATE CREDENTIALS"** → **"OAuth client ID"**
 3. If prompted, configure the OAuth consent screen:
    - User Type: **External**
-   - App name: `P2P Lending Tracker`
+   - App name: `Loan Tracker`
    - User support email: Your email
    - Developer contact: Your email
    - Click **"Save and Continue"**
@@ -32,7 +32,7 @@ Your P2P Lending Tracker PWA is ready! Follow these steps to set it up:
    - Test users: Add your email, click **"Save and Continue"**
 4. Back to Create OAuth client ID:
    - Application type: **Web application**
-   - Name: `P2P Lending Tracker Web Client`
+   - Name: `Loan Tracker Web Client`
    - Authorized JavaScript origins:
      - Click **"+ ADD URI"**
      - Add: `http://localhost:8080` (for testing)

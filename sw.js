@@ -1,4 +1,4 @@
-// Service Worker for P2P Lending Tracker PWA
+// Service Worker for Loan Tracker PWA
 const CACHE_NAME = 'p2p-lending-v1';
 const urlsToCache = [
     './',
@@ -21,7 +21,7 @@ self.addEventListener('install', (event) => {
         caches.open(CACHE_NAME)
             .then((cache) => {
                 console.log('Caching app assets');
-                return cache.addAll(ASSETS_TO_CACHE);
+                return cache.addAll(urlsToCache);
             })
             .then(() => self.skipWaiting())
     );

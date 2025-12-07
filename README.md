@@ -1,10 +1,10 @@
-# P2P Lending Tracker
+# Loan Tracker
 
-A beautiful, modern progressive web app for tracking peer-to-peer lending activities. Built with vanilla JavaScript and Google Sheets as the backend.
+A beautiful, modern progressive web app for tracking lending activities. Built with vanilla JavaScript and Google Sheets as the backend.
 
 ## ✨ Features
 
-- 📊 **Loan Management** - Track all your P2P lending activities
+- 📊 **Loan Management** - Track all your lending activities
 - 💵 **Payment Tracking** - Record interest and principal payments
 - 📱 **Progressive Web App** - Install on any device, works offline
 - ☁️ **Google Sheets Backend** - Direct access to your data
@@ -114,4 +114,4 @@ For issues or questions, check the [SETUP.md](SETUP.md) troubleshooting section.
 
 ---
 
-Made with ❤️ for better P2P lending management
+Made with ❤️ for better lending management
