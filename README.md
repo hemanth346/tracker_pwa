@@ -108,6 +108,21 @@ p2p_progressive_webapp/
 - Use the search feature in Google Sheets to find specific loans
 - Export data to Excel or CSV for analysis
 
+## Deployment
+The app is deployed on GitHub Pages. You can find the deployed version at [https://hemanth346.github.io/tracker_pwa/](https://hemanth346.github.io/tracker_pwa/).
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+- **[Next Session Guide](docs/next_session_guide.md)** - Quick start for resuming development
+- **[Enhancements Roadmap](docs/enhancements_roadmap.md)** - Planned features and improvements
+- **[Technical Architecture](docs/technical_architecture.md)** - System design and architecture
+- **[Changelog](docs/changelog.md)** - Version history and updates
+
+See the [docs README](docs/README.md) for a complete index.
+
+
 ## 🤝 Support
 
 For issues or questions, check the [SETUP.md](SETUP.md) troubleshooting section.
