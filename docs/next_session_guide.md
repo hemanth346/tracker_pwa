@@ -5,7 +5,15 @@
 **App Name**: Loan Tracker (rebranded from P2P Lending Tracker)  
 **Deployed URL**: https://hemanth346.github.io/tracker_pwa/  
 **Repository**: https://github.com/hemanth346/tracker_pwa  
-**Status**: ✅ Deployed and functional
+**Status**: ✅ Deployed and functional  
+**Version**: v1.1.0 (Bug fixes completed December 31, 2025)
+
+### Recent Updates ✅
+- **Fixed all critical bugs** from Phase 1 deployment
+- **Profile picture display** now working properly
+- **Smart dropdowns** fully functional with all datalists
+- **Amount increments** changed to ₹1,000 as requested
+- **Documentation updated** to reflect actual implementation status
 
 ---
 

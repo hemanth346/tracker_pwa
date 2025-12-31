@@ -109,6 +109,7 @@ class UI {
     // Update user info in header
     updateUserInfo(user) {
         const userName = document.getElementById('user-name');
+        const userAvatar = document.getElementById('user-avatar');
 
         if (userAvatar && user.picture) {
             userAvatar.src = user.picture;
@@ -119,8 +120,10 @@ class UI {
             };
         }
 
-        if (userName) {
+        if (userName && user.name) {
             userName.textContent = user.name;
+        } else {
+            console.warn('User name element not found or user name is missing');
         }
     }
 
@@ -557,30 +560,20 @@ class UI {
         }
     }
 
+    // Helper: Close modal
+    closeModal() {
+        const modal = document.querySelector('.modal-overlay');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
     // Helper: Show button loading state
     showBtnLoading(btn) {
         if (!btn) return;
         btn.dataset.originalText = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="spinner-sm"></span> Processing...';
-        // Add minimal spinner css if not exists
-        if (!document.getElementById('spinner-style')) {
-            const style = document.createElement('style');
-            style.id = 'spinner-style';
-            style.textContent = `
-                .spinner-sm {
-                    display: inline-block;
-                    width: 12px;
-                    height: 12px;
-                    border: 2px solid rgba(255,255,255,0.3);
-                    border-radius: 50%;
-                    border-top-color: #fff;
-                    animation: spin 1s ease-in-out infinite;
-                    margin-right: 8px;
-                }
-            `;
-            document.head.appendChild(style);
-        }
     }
 
     // Helper: Hide button loading state

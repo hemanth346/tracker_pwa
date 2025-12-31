@@ -2,15 +2,27 @@
 
 A beautiful, modern progressive web app for tracking lending activities. Built with vanilla JavaScript and Google Sheets as the backend.
 
+**🎉 Latest Update (v1.1.0 - Dec 31, 2025)**: All critical bugs from Phase 1 deployment have been fixed!
+
 ## ✨ Features
 
-- 📊 **Loan Management** - Track all your lending activities
-- 💵 **Payment Tracking** - Record interest and principal payments
-- 📱 **Progressive Web App** - Install on any device, works offline
-- ☁️ **Google Sheets Backend** - Direct access to your data
-- 🖼️ **Image Attachments** - Upload pro notes and payment receipts
-- 📈 **Auto Calculations** - Automatic interest tracking and calculations
-- 🎨 **Modern UI** - Elegant design with glassmorphism and smooth animations
+- 📊 **Loan Management** - Track all your lending activities ✅
+- 💵 **Payment Tracking** - Record interest and principal payments ✅
+- 📱 **Progressive Web App** - Install on any device, works offline ✅
+- ☁️ **Google Sheets Backend** - Direct access to your data ✅
+- 🖼️ **Image Attachments** - Upload pro notes and payment receipts ✅
+- 📈 **Auto Calculations** - Automatic interest tracking and calculations ✅
+- 🎨 **Modern UI** - Elegant design with glassmorphism and smooth animations ✅
+- 📝 **Loan Details Modal** - Click any loan to view/edit details ✅
+- 🔄 **Smart Dropdowns** - Auto-populated from existing data ✅
+- ⚡ **Loading States** - Visual feedback during operations ✅
+
+### Recently Fixed (v1.1.0)
+- ✅ Profile picture display issues
+- ✅ Smart dropdown functionality 
+- ✅ Amount field ₹1,000 increments
+- ✅ JavaScript errors and undefined variables
+- ✅ Code quality improvements
 
 ## 🚀 Quick Start
 

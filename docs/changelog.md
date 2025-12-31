@@ -1,5 +1,27 @@
 # Loan Tracker - Changelog
 
+## Version 1.1.0 - Bug Fixes and Phase 1 Enhancements (December 31, 2025)
+
+### 🐛 Critical Bug Fixes
+- **FIXED**: Undefined `userAvatar` variable causing JavaScript errors
+- **FIXED**: Missing datalist elements for Via and Received By dropdowns
+- **FIXED**: Amount step increments changed from 0.01 to ₹1,000
+- **FIXED**: Removed duplicate spinner CSS injection
+- **FIXED**: Added proper error handling for DOM elements
+
+### ✨ Phase 1 Enhancements Completed
+- ✅ **Loan Details Modal** - Click loan cards to view/edit details
+- ✅ **Smart Dropdowns** - Auto-populated from existing data
+- ✅ **Loading States** - Button disabling and spinners during operations
+- ✅ **Profile Picture Display** - Google avatar with fallback
+- ✅ **Navigation Hiding** - Hidden until authentication
+
+### ⚠️ Known Issues
+- **Payment Grouping**: Feature marked as implemented but not developed
+- **Modal Closing**: Inconsistent patterns across modals
+
+---
+
 ## Version 1.0.0 - Initial Release (December 7-8, 2024)
 
 ### 🎉 Initial Development

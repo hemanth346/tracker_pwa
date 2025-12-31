@@ -64,7 +64,7 @@ This document outlines planned enhancements for the Loan Tracker PWA, organized 
 ---
 
 ### 1.3 Compact Payment Cards with Grouping
-**Status**: Pending  
+**Status**: Not Implemented  
 **Priority**: Medium  
 **Effort**: 3-4 hours  
 **Impact**: High - Better data visualization
@@ -75,6 +75,8 @@ This document outlines planned enhancements for the Loan Tracker PWA, organized 
 - **Optional grouping**: By month, by borrower
 - **Filter options**: Show only interest/principal/both
 - **Summary stats**: Total per group
+
+**Current Issue**: This feature was marked as implemented but is not actually implemented in the current codebase.
 
 **UI Design**:
 ```

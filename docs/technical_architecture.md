@@ -378,7 +378,36 @@ Network-First:
 
 ---
 
-## 🔮 Future Architecture Considerations
+## � Recent Bug Fixes (v1.1.0 - December 31, 2025)
+
+### Critical Issues Resolved
+1. **Profile Picture Display**: Fixed undefined `userAvatar` variable in ui.js
+   - Issue: JavaScript error when displaying Google profile pictures
+   - Fix: Added proper DOM element selection `document.getElementById('user-avatar')`
+
+2. **Smart Dropdowns**: Added missing datalist elements
+   - Issue: Via and Received By dropdowns not functioning
+   - Fix: Added `<datalist id="via-list">` and confirmed `received-by-list` exists
+
+3. **Form Input Configuration**: Fixed amount step increments
+   - Issue: Amount fields used step="0.01" instead of user-requested ₹1,000 increments
+   - Fix: Changed to step="1000" in both loan and payment forms
+
+4. **Code Quality**: Removed duplicate CSS injection
+   - Issue: Dynamic spinner CSS injection when styles already exist in styles.css
+   - Fix: Removed redundant style element creation in showBtnLoading()
+
+5. **Error Handling**: Improved DOM element validation
+   - Issue: Potential errors when DOM elements don't exist
+   - Fix: Added null checks and warning messages
+
+### Implementation Status Corrections
+- **Payment Grouping**: Updated roadmap status from "Implemented" to "Not Implemented"
+- **Documentation**: Synchronized actual implementation with roadmap
+
+---
+
+## �🔮 Future Architecture Considerations
 
 ### Scalability
 - Current: Suitable for < 1000 loans, < 5000 payments
@@ -397,5 +426,5 @@ Network-First:
 
 ---
 
-**Last Updated**: December 8, 2024  
-**Version**: 1.0
+**Last Updated**: December 31, 2025  
+**Version**: 1.1.0

@@ -113,7 +113,7 @@ class App {
         <div class="grid grid-2">
           <div class="form-group">
             <label class="form-label">Amount Lent (₹) *</label>
-            <input type="number" name="amount" class="form-input" required placeholder="10000" min="0" step="0.01">
+            <input type="number" name="amount" class="form-input" required placeholder="10000" min="0" step="1000">
           </div>
           
           <div class="form-group">
@@ -131,6 +131,7 @@ class App {
           <div class="form-group">
             <label class="form-label">Via (Referrer/Surety)</label>
             <input type="text" name="via" class="form-input" placeholder="Who referred or is backing" list="via-list">
+            <datalist id="via-list"></datalist>
           </div>
           
           <div class="form-group">
@@ -285,7 +286,7 @@ class App {
         <div class="grid grid-2">
           <div class="form-group">
             <label class="form-label">Amount Received (₹) *</label>
-            <input type="number" name="amount" class="form-input" required placeholder="1000" min="0" step="0.01">
+            <input type="number" name="amount" class="form-input" required placeholder="1000" min="0" step="1000">
           </div>
           
           <div class="form-group">
@@ -312,6 +313,7 @@ class App {
           <div class="form-group">
             <label class="form-label">Received By</label>
             <input type="text" name="receivedBy" class="form-input" placeholder="Self" value="Self" list="received-by-list">
+            <datalist id="received-by-list"></datalist>
           </div>
         </div>
         
