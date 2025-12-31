@@ -16,6 +16,7 @@ A beautiful, modern progressive web app for tracking lending activities. Built w
 - 📝 **Loan Details Modal** - Click any loan to view/edit details ✅
 - 🔄 **Smart Dropdowns** - Auto-populated from existing data ✅
 - ⚡ **Loading States** - Visual feedback during operations ✅
+- 📊 **Payment Grouping** - Collapsible groups with filters and summaries ✅
 
 ### Recently Fixed (v1.1.0)
 - ✅ Profile picture display issues
@@ -23,6 +24,9 @@ A beautiful, modern progressive web app for tracking lending activities. Built w
 - ✅ Amount field ₹1,000 increments
 - ✅ JavaScript errors and undefined variables
 - ✅ Code quality improvements
+
+### New in v1.1.0
+- ✅ **Payment Grouping Feature** - Group payments by Loan ID, Borrower, or Month with collapsible sections and filtering options
 
 ## 🚀 Quick Start
 
