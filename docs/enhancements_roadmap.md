@@ -506,5 +506,21 @@ userAvatar.onerror = () => {
 
 ---
 
-**Last Updated**: December 31, 2024  
+**Last Updated**: January 1, 2026  
 **Version**: 1.2.0
+
+## 📝 Phase 1 Feedback Fixes (January 1, 2026)
+
+### Issues Identified and Fixed:
+1. **Amount Step Size**: Changed from ₹1,000 to ₹100 increments for better usability
+2. **Missing Dropdowns**: Added borrower name datalist to loan creation form
+3. **Payment-Loan Linking**: Improved payment linking with proper loan ID selection
+   - Added loan selection dropdown in payment form
+   - Auto-populate borrower name when loan is selected
+   - Use actual loan ID for payment-loan linkage
+   - Added "Record Payment" button in loan details modal
+
+### Technical Improvements:
+- Enhanced payment form with active loan selection
+- Better data consistency between loans and payments
+- Improved UX with pre-selected loan when recording payments from loan details

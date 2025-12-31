@@ -1,5 +1,23 @@
 # Loan Tracker - Changelog
 
+## Version 1.2.0 - Phase 1 Feedback Fixes (January 1, 2026)
+
+### 🐛 Fixes Based on User Feedback
+- **FIXED**: Changed amount step increments from ₹1,000 to ₹100 for better usability
+- **FIXED**: Added borrower name dropdown to loan creation form (was missing datalist)
+- **FIXED**: Improved payment-loan linking with proper loan ID selection
+- **ENHANCED**: Payment form now includes loan selection dropdown
+- **ENHANCED**: Auto-populate borrower name when loan is selected in payment form
+- **NEW**: Added "Record Payment" button in loan details modal for quick payment entry
+
+### 🎯 Improvements
+- Better data consistency between loans and payments
+- Enhanced user experience with pre-selected loans
+- Proper loan-payment relationship tracking
+- More intuitive payment recording workflow
+
+---
+
 ## Version 1.1.0 - Bug Fixes and Phase 1 Enhancements (December 31, 2025)
 
 ### 🐛 Critical Bug Fixes

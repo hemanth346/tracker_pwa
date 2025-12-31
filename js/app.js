@@ -107,7 +107,8 @@ class App {
         
         <div class="form-group">
           <label class="form-label">Borrower Name *</label>
-          <input type="text" name="name" class="form-input" required placeholder="Enter borrower name">
+          <input type="text" name="name" class="form-input" required placeholder="Enter borrower name" list="borrower-list-loans">
+          <datalist id="borrower-list-loans"></datalist>
         </div>
         
         <div class="grid grid-2">
@@ -268,13 +269,20 @@ class App {
     }
   }
 
-  // Show add payment form
-  showAddPaymentForm() {
+  // Show add payment form with loan selection
+  showAddPaymentForm(selectedLoanId = null) {
     const formHtml = `
       <form id="add-payment-form" class="form">
         <div class="form-group">
           <label class="form-label">Payment Date *</label>
           <input type="date" name="paymentDate" class="form-input" required value="${new Date().toISOString().split('T')[0]}">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Select Loan *</label>
+          <select name="loanId" class="form-select" required id="loan-selector">
+            <option value="">Choose a loan...</option>
+          </select>
         </div>
         
         <div class="form-group">
@@ -286,7 +294,7 @@ class App {
         <div class="grid grid-2">
           <div class="form-group">
             <label class="form-label">Amount Received (₹) *</label>
-            <input type="number" name="amount" class="form-input" required placeholder="1000" min="0" step="1000">
+            <input type="number" name="amount" class="form-input" required placeholder="1000" min="0" step="100">
           </div>
           
           <div class="form-group">
@@ -337,8 +345,9 @@ class App {
 
     ui.showModal('Record Interest Payment', formHtml, footer);
 
-    // Populate borrower list
-    this.populateBorrowerList();
+    // Populate loan dropdown and other dropdowns
+    this.populateLoanDropdown(selectedLoanId);
+    this.populateSmartDropdowns();
 
     // Handle image preview
     const fileInput = document.getElementById('payment-attachments');
@@ -364,6 +373,7 @@ class App {
       // Borrowers (Name column C -> index 2)
       const borrowers = await sheetsManager.getDistinctValues('Loans', 2);
       this.updateDatalist('borrower-list', borrowers);
+      this.updateDatalist('borrower-list-loans', borrowers);
 
       // Via (Via column G -> index 6)
       const via = await sheetsManager.getDistinctValues('Loans', 6);
@@ -375,6 +385,73 @@ class App {
     } catch (error) {
       console.error('Error populating dropdowns:', error);
     }
+  }
+
+  // Populate loan dropdown for payment form
+  async populateLoanDropdown(selectedLoanId = null) {
+    try {
+      const loans = await sheetsManager.getLoans();
+      const activeLoans = loans.filter(loan => loan.status === 'Active');
+      
+      const loanSelector = document.getElementById('loan-selector');
+      const borrowerNameInput = document.querySelector('input[name="borrowerName"]');
+      
+      if (loanSelector) {
+        // Clear existing options except the first one
+        if (activeLoans.length === 0) {
+          loanSelector.innerHTML = '<option value="">No active loans available</option>';
+          if (borrowerNameInput) {
+            borrowerNameInput.disabled = true;
+            borrowerNameInput.placeholder = 'Create a loan first';
+          }
+          return;
+        }
+        
+        loanSelector.innerHTML = '<option value="">Choose a loan...</option>';
+        
+        // Add active loans as options
+        activeLoans.forEach(loan => {
+          const option = document.createElement('option');
+          option.value = loan.loanId;
+          option.textContent = `${loan.loanId} - ${loan.name} (₹${this.formatNumber(loan.amount)})`;
+          if (selectedLoanId === loan.loanId) {
+            option.selected = true;
+          }
+          loanSelector.appendChild(option);
+        });
+        
+        // Add event listener to populate borrower name when loan is selected (remove existing first)
+        const existingListener = loanSelector.getAttribute('data-listener-added');
+        if (!existingListener) {
+          loanSelector.addEventListener('change', (e) => {
+            const selectedLoan = activeLoans.find(loan => loan.loanId === e.target.value);
+            if (selectedLoan && borrowerNameInput) {
+              borrowerNameInput.value = selectedLoan.name;
+            } else if (borrowerNameInput) {
+              borrowerNameInput.value = '';
+            }
+          });
+          loanSelector.setAttribute('data-listener-added', 'true');
+        }
+          }
+        });
+        
+        // If a loan is pre-selected, populate the borrower name
+        if (selectedLoanId) {
+          const selectedLoan = activeLoans.find(loan => loan.loanId === selectedLoanId);
+          if (selectedLoan && borrowerNameInput) {
+            borrowerNameInput.value = selectedLoan.name;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error populating loan dropdown:', error);
+    }
+  }
+
+  // Helper: Format number for display
+  formatNumber(num) {
+    return new Intl.NumberFormat('en-IN').format(num);
   }
 
   // Helper: Update datalist
@@ -390,9 +467,17 @@ class App {
   // Submit payment form
   async submitPaymentForm() {
     const form = document.getElementById('add-payment-form');
+    const loanId = form?.querySelector('[name="loanId"]')?.value;
+    
     if (!form || !form.checkValidity()) {
       ui.showToast('Please fill in all required fields', 'error');
       form.reportValidity();
+      return;
+    }
+    
+    // Additional validation for loan selection
+    if (!loanId) {
+      ui.showToast('Please select a loan', 'error');
       return;
     }
 
@@ -422,7 +507,7 @@ class App {
     const paymentData = {
       paymentDate: formData.get('paymentDate'),
       borrowerName: formData.get('borrowerName'),
-      loanReference: formData.get('borrowerName'), // Using name as reference
+      loanReference: formData.get('loanId'), // Using actual loan ID
       amount: parseFloat(formData.get('amount')),
       paymentType: formData.get('paymentType'),
       paymentMethod: formData.get('paymentMethod'),

@@ -510,6 +510,7 @@ class UI {
 
         const footer = `
             <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+            <button class="btn btn-outline" onclick="ui.recordPaymentForLoan('${loan.loanId}')">Record Payment</button>
             <button class="btn btn-primary" onclick="ui.editLoan(${loan.rowIndex})">Edit Loan</button>
         `;
 
@@ -742,6 +743,17 @@ class UI {
         if (url) {
             window.open(url, '_blank');
         }
+    }
+
+    // Record payment for specific loan
+    recordPaymentForLoan(loanId) {
+        // Close current modal
+        this.closeModal();
+        
+        // Show payment form with pre-selected loan
+        setTimeout(() => {
+            app.showAddPaymentForm(loanId);
+        }, 100); // Small delay to allow modal to close
     }
 
     // Helper: Close modal
