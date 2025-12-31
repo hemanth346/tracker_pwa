@@ -177,6 +177,9 @@ class App {
 
     ui.showModal('Add New Loan', formHtml, footer);
 
+    // Populate smart dropdowns for autocomplete functionality
+    this.populateSmartDropdowns();
+
     // Handle image preview
     const fileInput = document.getElementById('loan-attachments');
     if (fileInput) {
@@ -209,7 +212,17 @@ class App {
   // Submit loan form
   async submitLoanForm() {
     const form = document.getElementById('add-loan-form');
-    if (!form || !form.checkValidity()) {
+    if (!form) {
+      ui.showToast('Form not found', 'error');
+      return;
+    }
+
+    // Check form validity and provide specific feedback
+    if (!form.checkValidity()) {
+      // Find specific invalid fields for debugging
+      const invalidFields = form.querySelectorAll(':invalid');
+      console.log('Invalid fields:', Array.from(invalidFields).map(f => ({ name: f.name, value: f.value, validationMessage: f.validationMessage })));
+      
       ui.showToast('Please fill in all required fields', 'error');
       form.reportValidity();
       return;
