@@ -4,6 +4,13 @@ class UI {
         this.currentView = 'loans';
         this.currentLoan = null;
         this.currentPayment = null;
+        
+        // Pagination settings
+        this.itemsPerPage = 20;
+        this.loansPage = 1;
+        this.paymentsPage = 1;
+        this.allLoans = [];
+        this.allPayments = [];
     }
 
     // Initialize UI
@@ -59,6 +66,8 @@ class UI {
             this.loadLoans();
         } else if (viewName === 'payments') {
             this.loadPayments();
+        } else if (viewName === 'analytics') {
+            this.loadAnalytics();
         }
     }
 
@@ -139,12 +148,18 @@ class UI {
         }
     }
 
-    // Render loans
-    renderLoans(loans) {
+    // Render loans with pagination
+    renderLoans(loans, append = false) {
         const container = document.getElementById('loans-list');
         if (!container) return;
 
-        if (loans.length === 0) {
+        // Store all loans for pagination
+        if (!append) {
+            this.allLoans = loans;
+            this.loansPage = 1;
+        }
+
+        if (this.allLoans.length === 0) {
             container.innerHTML = `
         <div class="text-center" style="padding: 3rem;">
           <p class="text-secondary">No loans yet. Add your first loan to get started!</p>
@@ -153,8 +168,8 @@ class UI {
             return;
         }
 
-        // Add filter controls
-        const filterHtml = this.renderLoanFilters();
+        // Add filter controls only if not appending
+        const filterHtml = append ? '' : this.renderLoanFilters();
         
         // Get current filter settings
         const groupBy = this.loanGroupBy || 'borrower';
@@ -162,15 +177,45 @@ class UI {
         const amountFilter = this.loanFilterAmount || 'all';
         
         // Filter loans based on criteria
-        const filteredLoans = this.filterLoansByType(loans, statusFilter, amountFilter);
+        const filteredLoans = this.filterLoansByType(this.allLoans, statusFilter, amountFilter);
+        
+        // Apply pagination to filtered loans
+        const startIndex = (this.loansPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const paginatedLoans = filteredLoans.slice(0, endIndex);
         
         // Group loans
-        const groupedLoans = this.groupLoans(filteredLoans, groupBy);
+        const groupedLoans = this.groupLoans(paginatedLoans, groupBy);
         
         // Render grouped loans
         const groupsHtml = this.renderLoanGroups(groupedLoans, groupBy);
         
-        container.innerHTML = filterHtml + groupsHtml;
+        // Add load more button if there are more items
+        const hasMore = endIndex < filteredLoans.length;
+        const loadMoreHtml = hasMore ? `
+            <div class="text-center" style="margin-top: 1rem;">
+                <button class="btn btn-outline" id="load-more-loans">
+                    Load More (${filteredLoans.length - endIndex} remaining)
+                </button>
+            </div>
+        ` : '';
+        
+        if (append) {
+            // Find the existing content and replace just the groups
+            const existingFilterHtml = container.querySelector('.loan-filters')?.outerHTML || '';
+            container.innerHTML = existingFilterHtml + groupsHtml + loadMoreHtml;
+        } else {
+            container.innerHTML = filterHtml + groupsHtml + loadMoreHtml;
+        }
+        
+        // Add event listener for load more button
+        const loadMoreBtn = document.getElementById('load-more-loans');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', () => {
+                this.loansPage++;
+                this.renderLoans(this.allLoans, true);
+            });
+        }
         
         // Add event listeners for collapsible sections
         this.attachLoanGroupToggleListeners();
@@ -179,7 +224,7 @@ class UI {
         container.querySelectorAll('.loan-row').forEach(item => {
             item.addEventListener('click', () => {
                 const rowIndex = parseInt(item.dataset.row);
-                const loan = loans.find(l => l.rowIndex === rowIndex);
+                const loan = this.allLoans.find(l => l.rowIndex === rowIndex);
                 this.showLoanDetails(loan);
             });
         });
@@ -197,12 +242,18 @@ class UI {
         }
     }
 
-    // Render payments with grouping
-    renderPayments(payments) {
+    // Render payments with grouping and pagination
+    renderPayments(payments, append = false) {
         const container = document.getElementById('payments-list');
         if (!container) return;
 
-        if (payments.length === 0) {
+        // Store all payments for pagination
+        if (!append) {
+            this.allPayments = payments;
+            this.paymentsPage = 1;
+        }
+
+        if (this.allPayments.length === 0) {
             container.innerHTML = `
         <div class="text-center" style="padding: 3rem;">
           <p class="text-secondary">No payments recorded yet.</p>
@@ -211,23 +262,53 @@ class UI {
             return;
         }
 
-        // Add filter controls
-        const filterHtml = this.renderPaymentFilters();
+        // Add filter controls only if not appending
+        const filterHtml = append ? '' : this.renderPaymentFilters();
         
         // Get current filter settings
         const groupBy = this.paymentGroupBy || 'loanId';
         const filterType = this.paymentFilterType || 'all';
         
         // Filter payments based on type
-        const filteredPayments = this.filterPaymentsByType(payments, filterType);
+        const filteredPayments = this.filterPaymentsByType(this.allPayments, filterType);
+        
+        // Apply pagination to filtered payments
+        const startIndex = (this.paymentsPage - 1) * this.itemsPerPage;
+        const endIndex = startIndex + this.itemsPerPage;
+        const paginatedPayments = filteredPayments.slice(0, endIndex);
         
         // Group payments
-        const groupedPayments = this.groupPayments(filteredPayments, groupBy);
+        const groupedPayments = this.groupPayments(paginatedPayments, groupBy);
         
         // Render grouped payments
         const groupsHtml = this.renderPaymentGroups(groupedPayments, groupBy);
         
-        container.innerHTML = filterHtml + groupsHtml;
+        // Add load more button if there are more items
+        const hasMore = endIndex < filteredPayments.length;
+        const loadMoreHtml = hasMore ? `
+            <div class="text-center" style="margin-top: 1rem;">
+                <button class="btn btn-outline" id="load-more-payments">
+                    Load More (${filteredPayments.length - endIndex} remaining)
+                </button>
+            </div>
+        ` : '';
+        
+        if (append) {
+            // Find the existing content and replace just the groups
+            const existingFilterHtml = container.querySelector('.payment-filters')?.outerHTML || '';
+            container.innerHTML = existingFilterHtml + groupsHtml + loadMoreHtml;
+        } else {
+            container.innerHTML = filterHtml + groupsHtml + loadMoreHtml;
+        }
+        
+        // Add event listener for load more button
+        const loadMoreBtn = document.getElementById('load-more-payments');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', () => {
+                this.paymentsPage++;
+                this.renderPayments(this.allPayments, true);
+            });
+        }
         
         // Add event listeners for collapsible sections
         this.attachGroupToggleListeners();
@@ -418,11 +499,20 @@ class UI {
 
     // ====== LOAN GROUPING AND FILTERING METHODS ======
 
-    // Render loan filter controls
+    // Render loan filter controls with search
     renderLoanFilters() {
         return `
             <div class="loan-filters" style="margin-bottom: 1rem; padding: 1rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
-                <div class="grid grid-3" style="gap: 1rem;">
+                <!-- Search Bar -->
+                <div style="margin-bottom: 1rem;">
+                    <div class="flex items-center gap-sm">
+                        <input type="text" id="loan-search-input" class="form-input" placeholder="Search loans by name, ID, or details..." style="flex: 1;">
+                        <button id="clear-loan-search" class="btn btn-outline btn-sm" title="Clear search">✕</button>
+                    </div>
+                </div>
+                
+                <!-- Filter Controls -->
+                <div class="grid grid-4" style="gap: 1rem;">
                     <div>
                         <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Group By:</label>
                         <select id="loan-group-by-select" class="form-select" style="width: 100%;">
@@ -450,21 +540,39 @@ class UI {
                             <option value="large" ${this.loanFilterAmount === 'large' ? 'selected' : ''}>&#62; ₹2,00,000</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Date Range:</label>
+                        <input type="date" id="loan-date-filter" class="form-input" style="width: 100%;" title="Filter by date given">
+                    </div>
                 </div>
+                
+                <!-- Search Results Summary -->
+                <div id="loan-search-summary" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);"></div>
             </div>
         `;
     }
 
-    // Filter loans by status and amount
+    // Filter loans by status, amount, and search criteria
     filterLoansByType(loans, statusFilter, amountFilter) {
-        let filteredLoans = loans;
+        // Get search criteria from inputs
+        const searchInput = document.getElementById('loan-search-input');
+        const dateFilter = document.getElementById('loan-date-filter');
         
-        // Filter by status
-        if (statusFilter !== 'all') {
-            filteredLoans = filteredLoans.filter(loan => loan.status === statusFilter);
+        const searchCriteria = {
+            query: searchInput ? searchInput.value : '',
+            status: statusFilter !== 'all' ? statusFilter : '',
+            dateFrom: dateFilter ? dateFilter.value : ''
+        };
+
+        // Add amount filter to search criteria
+        let filteredLoans = loans;
+
+        // Use search manager for comprehensive filtering
+        if (searchCriteria.query || searchCriteria.status || searchCriteria.dateFrom) {
+            filteredLoans = searchManager.searchLoans(loans, searchCriteria);
         }
         
-        // Filter by amount
+        // Additional amount filter (legacy support)
         if (amountFilter !== 'all') {
             filteredLoans = filteredLoans.filter(loan => {
                 const amount = parseFloat(loan.amount) || 0;
@@ -476,8 +584,20 @@ class UI {
                 }
             });
         }
+
+        // Update search summary
+        this.updateLoanSearchSummary(loans.length, filteredLoans.length, searchCriteria);
         
         return filteredLoans;
+    }
+
+    // Update search summary display
+    updateLoanSearchSummary(originalCount, filteredCount, searchCriteria) {
+        const summaryElement = document.getElementById('loan-search-summary');
+        if (summaryElement) {
+            const summary = searchManager.getSearchSummary(originalCount, filteredCount, searchCriteria);
+            summaryElement.textContent = summary;
+        }
     }
 
     // Group loans by specified criteria
@@ -640,11 +760,14 @@ class UI {
         }
     }
 
-    // Attach event listeners for loan filter changes
+    // Attach event listeners for loan filter changes and search
     attachLoanGroupToggleListeners() {
         const groupBySelect = document.getElementById('loan-group-by-select');
         const filterStatusSelect = document.getElementById('loan-filter-status-select');
         const filterAmountSelect = document.getElementById('loan-filter-amount-select');
+        const searchInput = document.getElementById('loan-search-input');
+        const clearSearchBtn = document.getElementById('clear-loan-search');
+        const dateFilter = document.getElementById('loan-date-filter');
         
         if (groupBySelect) {
             groupBySelect.addEventListener('change', (e) => {
@@ -664,6 +787,35 @@ class UI {
             filterAmountSelect.addEventListener('change', (e) => {
                 this.loanFilterAmount = e.target.value;
                 this.loadLoans(); // Reload with new filter
+            });
+        }
+
+        // Debounced search input
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                searchManager.debounce(() => {
+                    this.renderLoans(this.allLoans);
+                }, searchManager.searchDebounceTime, 'loan-search');
+            });
+        }
+
+        // Clear search button
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+                if (dateFilter) {
+                    dateFilter.value = '';
+                }
+                this.renderLoans(this.allLoans);
+            });
+        }
+
+        // Date filter
+        if (dateFilter) {
+            dateFilter.addEventListener('change', () => {
+                this.renderLoans(this.allLoans);
             });
         }
     }
@@ -1000,6 +1152,455 @@ class UI {
         setTimeout(() => {
             app.showAddPaymentForm(loanId);
         }, 100); // Small delay to allow modal to close
+    }
+
+    // ====== ANALYTICS METHODS ======
+
+    // Load analytics view
+    async loadAnalytics() {
+        try {
+            this.showLoading('analytics-content');
+            
+            // Get fresh data
+            const loans = await sheetsManager.getLoans();
+            const payments = await sheetsManager.getPayments();
+            
+            // Initialize analytics
+            analyticsManager.init(loans, payments);
+            
+            // Render analytics dashboard
+            this.renderAnalytics();
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            this.showToast('Error loading analytics', 'error');
+        }
+    }
+
+    // Render analytics dashboard
+    renderAnalytics() {
+        const container = document.getElementById('analytics-content');
+        if (!container) return;
+
+        const metrics = analyticsManager.getSummaryMetrics();
+        const performance = analyticsManager.getPerformanceMetrics();
+        const topBorrowers = analyticsManager.getTopBorrowers();
+        const statusDistribution = analyticsManager.getLoanStatusDistribution();
+
+        container.innerHTML = `
+            <!-- Summary Cards -->
+            <div class="analytics-summary">
+                <h3 style="margin-bottom: 1rem; color: var(--text-primary);">Portfolio Summary</h3>
+                <div class="analytics-grid">
+                    <div class="analytics-card primary">
+                        <div class="analytics-icon">💰</div>
+                        <div class="analytics-content">
+                            <div class="analytics-value">₹${this.formatNumber(metrics.totalAmountLent)}</div>
+                            <div class="analytics-label">Total Amount Lent</div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card success">
+                        <div class="analytics-icon">📈</div>
+                        <div class="analytics-content">
+                            <div class="analytics-value">₹${this.formatNumber(metrics.totalInterestEarned)}</div>
+                            <div class="analytics-label">Interest Earned</div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card info">
+                        <div class="analytics-icon">📊</div>
+                        <div class="analytics-content">
+                            <div class="analytics-value">${metrics.totalLoans}</div>
+                            <div class="analytics-label">Total Loans</div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card warning">
+                        <div class="analytics-icon">⏰</div>
+                        <div class="analytics-content">
+                            <div class="analytics-value">₹${this.formatNumber(metrics.expectedMonthlyIncome)}</div>
+                            <div class="analytics-label">Monthly Expected</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active vs Closed Loans -->
+            <div class="analytics-section">
+                <h3>Loan Status Distribution</h3>
+                <div class="analytics-row">
+                    <div class="analytics-chart-container">
+                        <div class="loan-status-chart">
+                            ${this.renderStatusBars(statusDistribution)}
+                        </div>
+                    </div>
+                    <div class="analytics-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">Active Loans</div>
+                            <div class="stat-value">${metrics.activeLoans}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Closed Loans</div>
+                            <div class="stat-value">${metrics.closedLoans}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Default Rate</div>
+                            <div class="stat-value">${metrics.defaultRate.toFixed(1)}%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">ROI</div>
+                            <div class="stat-value">${metrics.roiPercentage.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Borrowers -->
+            <div class="analytics-section">
+                <h3>Top Borrowers</h3>
+                <div class="top-borrowers-list">
+                    ${topBorrowers.map((borrower, index) => `
+                        <div class="borrower-item">
+                            <div class="borrower-rank">#${index + 1}</div>
+                            <div class="borrower-info">
+                                <div class="borrower-name">${this.escapeHtml(borrower.name)}</div>
+                                <div class="borrower-stats">
+                                    ${borrower.loanCount} loan${borrower.loanCount !== 1 ? 's' : ''} • 
+                                    ₹${this.formatNumber(borrower.totalInterestPaid)} interest paid
+                                </div>
+                            </div>
+                            <div class="borrower-amount">₹${this.formatNumber(borrower.totalAmount)}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="analytics-section">
+                <h3>Performance Metrics</h3>
+                <div class="performance-grid">
+                    <div class="performance-card">
+                        <div class="performance-label">Average Loan Tenure</div>
+                        <div class="performance-value">${performance.averageLoanTenure} months</div>
+                    </div>
+                    <div class="performance-card">
+                        <div class="performance-label">Collection Efficiency</div>
+                        <div class="performance-value">${performance.collectionEfficiency.toFixed(1)}%</div>
+                    </div>
+                    <div class="performance-card">
+                        <div class="performance-label">Portfolio Value</div>
+                        <div class="performance-value">₹${this.formatNumber(performance.totalPortfolioValue)}</div>
+                    </div>
+                    <div class="performance-card">
+                        <div class="performance-label">Portfolio Growth</div>
+                        <div class="performance-value">${performance.portfolioGrowthRate}%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Analysis -->
+            <div class="analytics-section">
+                <h3>Risk Analysis</h3>
+                <div class="risk-analysis">
+                    <div class="risk-item ${metrics.overdueLoans > 0 ? 'risk-high' : 'risk-low'}">
+                        <div class="risk-label">Overdue Loans</div>
+                        <div class="risk-value">${metrics.overdueLoans}</div>
+                        <div class="risk-note">${metrics.overdueLoans > 0 ? 'Requires attention' : 'All up to date'}</div>
+                    </div>
+                    <div class="risk-item ${metrics.defaultRate > 10 ? 'risk-high' : metrics.defaultRate > 5 ? 'risk-medium' : 'risk-low'}">
+                        <div class="risk-label">Default Rate</div>
+                        <div class="risk-value">${metrics.defaultRate.toFixed(1)}%</div>
+                        <div class="risk-note">${metrics.defaultRate > 10 ? 'High risk' : metrics.defaultRate > 5 ? 'Moderate risk' : 'Low risk'}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add CSS for analytics if not already present
+        this.addAnalyticsCSS();
+
+        // Add refresh button listener
+        const refreshBtn = document.getElementById('refresh-analytics-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                // Clear cache and reload
+                cacheManager.remove('loans');
+                cacheManager.remove('payments');
+                this.loadAnalytics();
+                this.showToast('Analytics refreshed', 'success');
+            });
+        }
+    }
+
+    // Render status bars
+    renderStatusBars(statusDistribution) {
+        return statusDistribution.map(status => {
+            const color = status.label === 'Active' ? '#4CAF50' : 
+                         status.label === 'Closed' ? '#2196F3' : '#f44336';
+            
+            return `
+                <div class="status-bar">
+                    <div class="status-info">
+                        <span class="status-label">${status.label}</span>
+                        <span class="status-count">${status.value} (${status.percentage}%)</span>
+                    </div>
+                    <div class="status-progress">
+                        <div class="status-fill" style="width: ${status.percentage}%; background: ${color};"></div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Add analytics CSS
+    addAnalyticsCSS() {
+        if (document.querySelector('#analytics-styles')) return;
+
+        const style = document.createElement('style');
+        style.id = 'analytics-styles';
+        style.textContent = `
+            .analytics-summary { margin-bottom: 2rem; }
+            
+            .analytics-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                margin-bottom: 2rem;
+            }
+            
+            .analytics-card {
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                border-left: 4px solid var(--primary);
+            }
+            
+            .analytics-card.success { border-left-color: #4CAF50; }
+            .analytics-card.info { border-left-color: #2196F3; }
+            .analytics-card.warning { border-left-color: #FF9800; }
+            
+            .analytics-icon {
+                font-size: 2rem;
+                opacity: 0.8;
+            }
+            
+            .analytics-value {
+                font-size: 1.5rem;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+            
+            .analytics-label {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+            }
+            
+            .analytics-section {
+                margin-bottom: 2rem;
+                background: var(--surface);
+                border-radius: 12px;
+                padding: 1.5rem;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            
+            .analytics-section h3 {
+                margin-bottom: 1rem;
+                color: var(--text-primary);
+                border-bottom: 2px solid var(--primary);
+                padding-bottom: 0.5rem;
+            }
+            
+            .analytics-row {
+                display: grid;
+                grid-template-columns: 1fr 200px;
+                gap: 2rem;
+                align-items: start;
+            }
+            
+            .status-bar {
+                margin-bottom: 1rem;
+            }
+            
+            .status-info {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            .status-progress {
+                background: var(--border);
+                height: 8px;
+                border-radius: 4px;
+                overflow: hidden;
+            }
+            
+            .status-fill {
+                height: 100%;
+                transition: width 0.3s ease;
+            }
+            
+            .analytics-stats {
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .stat-item {
+                text-align: center;
+                padding: 1rem;
+                background: rgba(99, 102, 241, 0.1);
+                border-radius: 8px;
+            }
+            
+            .stat-label {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                margin-bottom: 0.25rem;
+            }
+            
+            .stat-value {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--primary);
+            }
+            
+            .top-borrowers-list {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .borrower-item {
+                display: flex;
+                align-items: center;
+                gap: 1rem;
+                padding: 1rem;
+                background: rgba(255,255,255,0.5);
+                border-radius: 8px;
+                border: 1px solid var(--border);
+            }
+            
+            .borrower-rank {
+                width: 2rem;
+                height: 2rem;
+                border-radius: 50%;
+                background: var(--primary);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 600;
+                font-size: 0.875rem;
+            }
+            
+            .borrower-info {
+                flex: 1;
+            }
+            
+            .borrower-name {
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+            
+            .borrower-stats {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                margin-top: 0.25rem;
+            }
+            
+            .borrower-amount {
+                font-weight: 600;
+                color: var(--primary);
+            }
+            
+            .performance-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 1rem;
+            }
+            
+            .performance-card {
+                text-align: center;
+                padding: 1rem;
+                background: rgba(255,255,255,0.5);
+                border-radius: 8px;
+                border: 1px solid var(--border);
+            }
+            
+            .performance-label {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                margin-bottom: 0.5rem;
+            }
+            
+            .performance-value {
+                font-size: 1.25rem;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+            
+            .risk-analysis {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+            
+            .risk-item {
+                padding: 1rem;
+                border-radius: 8px;
+                text-align: center;
+            }
+            
+            .risk-low { background: rgba(76, 175, 80, 0.1); border: 1px solid #4CAF50; }
+            .risk-medium { background: rgba(255, 152, 0, 0.1); border: 1px solid #FF9800; }
+            .risk-high { background: rgba(244, 67, 54, 0.1); border: 1px solid #f44336; }
+            
+            .risk-label {
+                font-size: 0.875rem;
+                color: var(--text-secondary);
+                margin-bottom: 0.5rem;
+            }
+            
+            .risk-value {
+                font-size: 1.5rem;
+                font-weight: 600;
+                margin-bottom: 0.25rem;
+            }
+            
+            .risk-low .risk-value { color: #4CAF50; }
+            .risk-medium .risk-value { color: #FF9800; }
+            .risk-high .risk-value { color: #f44336; }
+            
+            .risk-note {
+                font-size: 0.75rem;
+                opacity: 0.8;
+            }
+            
+            @media (max-width: 768px) {
+                .analytics-row {
+                    grid-template-columns: 1fr;
+                    gap: 1rem;
+                }
+                
+                .analytics-grid {
+                    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                }
+                
+                .performance-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .risk-analysis {
+                    grid-template-columns: 1fr;
+                }
+            }
+        `;
+        document.head.appendChild(style);
     }
 
     // Helper: Close modal

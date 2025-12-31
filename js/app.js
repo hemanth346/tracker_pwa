@@ -7,6 +7,12 @@ class App {
   // Initialize the application
   async init() {
     try {
+      // Initialize cache manager
+      cacheManager.init();
+
+      // Initialize offline manager
+      offlineManager.init();
+
       // Register service worker
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js')

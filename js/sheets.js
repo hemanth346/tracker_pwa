@@ -242,6 +242,10 @@ class SheetsManager {
                 },
             });
 
+            // Invalidate cache after successful addition
+            cacheManager.remove('loans');
+            console.log('Loans cache invalidated after adding new loan');
+
             return loanId;
         } catch (error) {
             console.error('Error adding loan:', error);
@@ -249,16 +253,25 @@ class SheetsManager {
         }
     }
 
-    // Get all loans
+    // Get all loans (with caching)
     async getLoans() {
         try {
+            // Check cache first
+            const cacheKey = 'loans';
+            const cachedLoans = cacheManager.get(cacheKey);
+            if (cachedLoans) {
+                console.log('Loans loaded from cache');
+                return cachedLoans;
+            }
+
+            console.log('Fetching loans from API...');
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: this.spreadsheetId,
                 range: 'Loans!A2:O',
             });
 
             const rows = response.result.values || [];
-            return rows.map((row, index) => ({
+            const loans = rows.map((row, index) => ({
                 rowIndex: index + 2,
                 loanId: row[0] || '',
                 dateGiven: row[1] || '',
@@ -276,8 +289,22 @@ class SheetsManager {
                 paidTillMonth: row[13] || '',
                 attachments: row[14] || ''
             }));
+
+            // Cache the results
+            cacheManager.set(cacheKey, loans);
+            console.log('Loans cached for future requests');
+
+            return loans;
         } catch (error) {
             console.error('Error getting loans:', error);
+            
+            // Try to return cached data even if expired in case of network error
+            const fallbackLoans = cacheManager.get('loans');
+            if (fallbackLoans) {
+                console.log('Returning cached loans due to API error');
+                return fallbackLoans;
+            }
+            
             throw error;
         }
     }
@@ -345,16 +372,25 @@ class SheetsManager {
         }
     }
 
-    // Get all payments
+    // Get all payments (with caching)
     async getPayments() {
         try {
+            // Check cache first
+            const cacheKey = 'payments';
+            const cachedPayments = cacheManager.get(cacheKey);
+            if (cachedPayments) {
+                console.log('Payments loaded from cache');
+                return cachedPayments;
+            }
+
+            console.log('Fetching payments from API...');
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: this.spreadsheetId,
                 range: 'Interest Payments!A2:I',
             });
 
             const rows = response.result.values || [];
-            return rows.map((row, index) => ({
+            const payments = rows.map((row, index) => ({
                 rowIndex: index + 2,
                 paymentDate: row[0] || '',
                 loanId: row[1] || '',
@@ -366,8 +402,22 @@ class SheetsManager {
                 attachments: row[7] || '',
                 notes: row[8] || ''
             }));
+
+            // Cache the results
+            cacheManager.set(cacheKey, payments);
+            console.log('Payments cached for future requests');
+
+            return payments;
         } catch (error) {
             console.error('Error getting payments:', error);
+            
+            // Try to return cached data even if expired in case of network error
+            const fallbackPayments = cacheManager.get('payments');
+            if (fallbackPayments) {
+                console.log('Returning cached payments due to API error');
+                return fallbackPayments;
+            }
+            
             throw error;
         }
     }

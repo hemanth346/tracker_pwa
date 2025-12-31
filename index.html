@@ -120,6 +120,16 @@
           <div id="payments-list"></div>
         </div>
 
+        <!-- Analytics View -->
+        <div id="analytics-view" class="view hidden">
+          <div class="flex justify-between items-center mb-lg">
+            <h2>Analytics & Insights</h2>
+            <button id="refresh-analytics-btn" class="btn btn-secondary">🔄 Refresh</button>
+          </div>
+          
+          <div id="analytics-content"></div>
+        </div>
+
         <!-- Settings View -->
         <div id="settings-view" class="view hidden">
           <h2 class="mb-lg">Settings</h2>
@@ -162,6 +172,10 @@
           <div class="nav-icon">💵</div>
           <div class="nav-label">Payments</div>
         </div>
+        <div class="nav-item" data-view="analytics">
+          <div class="nav-icon">📊</div>
+          <div class="nav-label">Analytics</div>
+        </div>
         <div class="nav-item" data-view="settings">
           <div class="nav-icon">⚙️</div>
           <div class="nav-label">Settings</div>
@@ -184,6 +198,11 @@
   <script src="./config.js"></script>
   
   <!-- Scripts -->
+  <script src="./js/cache.js"></script>
+  <script src="./js/search.js"></script>
+  <script src="./js/imageOptimizer.js"></script>
+  <script src="./js/analytics.js"></script>
+  <script src="./js/offlineManager.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/sheets.js"></script>
   <script src="./js/drive.js"></script>
