@@ -9,6 +9,13 @@ class Auth {
     // Initialize Google Identity Services
     async init() {
         return new Promise((resolve, reject) => {
+            // Check if CONFIG is available
+            if (typeof CONFIG === 'undefined') {
+                console.error('CONFIG is not defined');
+                reject(new Error('CONFIG not loaded'));
+                return;
+            }
+
             // Load Google Identity Services
             const script = document.createElement('script');
             script.src = 'https://accounts.google.com/gsi/client';
@@ -49,6 +56,7 @@ class Auth {
     signIn() {
         if (!this.tokenClient) {
             console.error('Token client not initialized');
+            this.handleAuthError('Authentication not ready. Please refresh the page.');
             return;
         }
 

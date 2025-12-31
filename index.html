@@ -210,6 +210,12 @@
   <script src="./js/app.js"></script>
 
   <script>
+    // Initialize the app when DOM is ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const app = new App();
+      app.init();
+    });
+
     // Show user info and buttons when authenticated
     window.addEventListener('auth:success', () => {
       document.getElementById('user-info').classList.remove('hidden');
