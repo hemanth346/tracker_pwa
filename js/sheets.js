@@ -282,6 +282,35 @@ class SheetsManager {
         }
     }
 
+    // Get distinct values from a column
+    async getDistinctValues(sheetName, columnIndex) {
+        try {
+            const range = `${sheetName}!${this.getColumnLetter(columnIndex)}2:${this.getColumnLetter(columnIndex)}`;
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: this.spreadsheetId,
+                range: range,
+            });
+
+            const values = response.result.values || [];
+            // Flatten, filter empty, unique, sort
+            return [...new Set(values.flat().filter(v => v))].sort();
+        } catch (error) {
+            console.error('Error getting distinct values:', error);
+            return [];
+        }
+    }
+
+    // Helper: Get column letter from index (0-based)
+    getColumnLetter(index) {
+        let temp, letter = '';
+        while (index >= 0) {
+            temp = index % 26;
+            letter = String.fromCharCode(temp + 65) + letter;
+            index = (index - temp - 1) / 26;
+        }
+        return letter;
+    }
+
     // Add interest payment
     async addPayment(paymentData) {
         try {

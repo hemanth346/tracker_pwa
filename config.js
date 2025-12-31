@@ -18,7 +18,7 @@ const CONFIG = {
 
     // App Settings
     APP_NAME: 'Loan Tracker',
-    SPREADSHEET_NAME: 'Loan Data',
+    SPREADSHEET_NAME: 'Loan Tracker',
     DRIVE_FOLDER_NAME: 'Loan Attachments'
 };
 

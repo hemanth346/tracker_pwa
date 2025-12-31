@@ -80,6 +80,10 @@ class UI {
             // Update UI with user info
             this.updateUserInfo(user);
 
+            // Show bottom nav
+            const nav = document.getElementById('main-nav');
+            if (nav) nav.classList.remove('hidden');
+
             // Show main app
             this.showView('loans');
             this.loadLoans();
@@ -96,16 +100,23 @@ class UI {
     onAuthSignout() {
         this.showView('auth');
         this.showToast('Signed out successfully', 'info');
+
+        // Hide bottom nav
+        const nav = document.getElementById('main-nav');
+        if (nav) nav.classList.add('hidden');
     }
 
     // Update user info in header
     updateUserInfo(user) {
-        const userAvatar = document.getElementById('user-avatar');
         const userName = document.getElementById('user-name');
 
         if (userAvatar && user.picture) {
             userAvatar.src = user.picture;
             userAvatar.alt = user.name;
+            // Fallback for broken images
+            userAvatar.onerror = () => {
+                userAvatar.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><circle cx="12" cy="8" r="4"/><path d="M12 14c-4.42 0-8 1.79-8 4v2h16v-2c0-2.21-3.58-4-8-4z"/></svg>';
+            };
         }
 
         if (userName) {
@@ -226,8 +237,196 @@ class UI {
 
     // Show loan details modal
     showLoanDetails(loan) {
-        // Implementation for detailed view
-        this.showToast('Loan details view - Coming soon!', 'info');
+        const content = `
+            <div class="loan-details">
+                <div class="detail-group">
+                    <label>Status</label>
+                    <span class="badge badge-${this.getStatusBadgeClass(loan.status)}">${loan.status}</span>
+                </div>
+                
+                <div class="grid grid-2">
+                    <div class="detail-group">
+                        <label>Amount Lent</label>
+                        <div class="detail-value">₹${this.formatNumber(loan.amount)}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Date Given</label>
+                        <div class="detail-value">${loan.dateGiven}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Interest Rate</label>
+                        <div class="detail-value">${loan.interestRate}% / month</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Monthly Interest</label>
+                        <div class="detail-value">₹${this.formatNumber((loan.amount * loan.interestRate) / 100)}</div>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <label>Borrower</label>
+                    <div class="detail-value">${this.escapeHtml(loan.name)}</div>
+                </div>
+
+                ${loan.details ? `
+                <div class="detail-group">
+                    <label>Details/Purpose</label>
+                    <div class="detail-value">${this.escapeHtml(loan.details)}</div>
+                </div>` : ''}
+
+                <div class="grid grid-2">
+                    <div class="detail-group">
+                        <label>Via</label>
+                        <div class="detail-value">${this.escapeHtml(loan.via || '-')}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Pro Note</label>
+                        <div class="detail-value">${loan.hasProNote ? 'Yes' : 'No'}</div>
+                    </div>
+                </div>
+
+                <div class="detail-group">
+                    <label>Contacts</label>
+                    <div class="detail-value">
+                        ${loan.contacts && loan.contacts.length > 0 ?
+                loan.contacts.map(c => `<div>${c.name} (${c.relation}): <a href="tel:${c.phone}">${c.phone}</a></div>`).join('')
+                : 'No contacts added'}
+                    </div>
+                </div>
+
+                <hr style="border: 0; border-top: 1px solid var(--border); margin: 1rem 0;">
+
+                <div class="grid grid-2">
+                    <div class="detail-group">
+                        <label>Total Interest Paid</label>
+                        <div class="detail-value">₹${this.formatNumber(loan.totalInterestPaid)}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Paid Till</label>
+                        <div class="detail-value">${loan.paidTillMonth || '-'}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Last Payment</label>
+                        <div class="detail-value">${loan.lastPaymentDate || '-'}</div>
+                    </div>
+                </div>
+
+                ${loan.attachments ? `
+                <div class="detail-group">
+                    <label>Attachments</label>
+                    <div class="detail-value">
+                        ${this.renderAttachmentsLinks(loan.attachments)}
+                    </div>
+                </div>` : ''}
+            </div>
+        `;
+
+        const footer = `
+            <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+            <button class="btn btn-primary" onclick="ui.editLoan(${loan.rowIndex})">Edit Loan</button>
+        `;
+
+        this.showModal(`Loan: ${loan.loanId}`, content, footer);
+    }
+
+    // Render attachments links
+    renderAttachmentsLinks(attachmentsStr) {
+        if (!attachmentsStr) return '';
+        // Assuming attachments are comma-separated links or formula links
+        // Simple heuristic to extract links
+        const links = attachmentsStr.match(/https?:\/\/[^\s",]+/g);
+        if (!links) return attachmentsStr; // specific logic might be needed for Drive links
+
+        return links.map((link, i) => `<a href="${link}" target="_blank" class="attachment-link">Attachment ${i + 1}</a>`).join(', ');
+    }
+
+    // Edit loan mode
+    async editLoan(rowIndex) {
+        // Find loan data
+        const loans = await sheetsManager.getLoans(); // Should be cached ideally
+        const loan = loans.find(l => l.rowIndex === rowIndex);
+        if (!loan) return;
+
+        // Close existing modal
+        document.querySelector('.modal-overlay')?.remove();
+
+        const formHtml = `
+            <form id="edit-loan-form" class="form">
+                <input type="hidden" name="rowIndex" value="${loan.rowIndex}">
+                <input type="hidden" name="loanId" value="${loan.loanId}">
+                <input type="hidden" name="existingAttachments" value="${this.escapeHtml(loan.attachments || '')}">
+                
+                <div class="form-group">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="Active" ${loan.status === 'Active' ? 'selected' : ''}>Active</option>
+                        <option value="Closed" ${loan.status === 'Closed' ? 'selected' : ''}>Closed</option>
+                        <option value="Defaulted" ${loan.status === 'Defaulted' ? 'selected' : ''}>Defaulted</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date Given</label>
+                    <input type="date" name="dateGiven" class="form-input" value="${loan.dateGiven}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Borrower Name</label>
+                    <input type="text" name="name" class="form-input" value="${this.escapeHtml(loan.name)}" required list="borrower-list">
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Amount Lent (₹)</label>
+                        <input type="number" name="amount" class="form-input" value="${loan.amount}" required step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Interest Rate (%)</label>
+                        <input type="number" name="interestRate" class="form-input" value="${loan.interestRate}" required step="0.01">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Details</label>
+                    <textarea name="details" class="form-textarea">${this.escapeHtml(loan.details)}</textarea>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label class="form-label">Via</label>
+                        <input type="text" name="via" class="form-input" value="${this.escapeHtml(loan.via)}" list="via-list">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Pro Note</label>
+                        <select name="hasProNote" class="form-select">
+                            <option value="false" ${!loan.hasProNote ? 'selected' : ''}>No</option>
+                            <option value="true" ${loan.hasProNote ? 'selected' : ''}>Yes</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Date of Closure</label>
+                    <input type="date" name="dateOfClosure" class="form-input" value="${loan.dateOfClosure}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Contacts (JSON)</label>
+                    <textarea name="contactsJson" class="form-textarea" rows="3" placeholder='[{"name":"...", "relation":"...", "phone":"..."}]'>${JSON.stringify(loan.contacts || [])}</textarea>
+                    <small class="text-secondary">Edit JSON directly for now</small>
+                </div>
+            </form>
+        `;
+
+        const footer = `
+            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="app.submitEditLoanForm()">Save Changes</button>
+        `;
+
+        this.showModal(`Edit Loan: ${loan.loanId}`, formHtml, footer);
+
+        // Trigger smart dropdowns population to ensure lists are ready
+        if (app.populateSmartDropdowns) app.populateSmartDropdowns();
     }
 
     // Show loading state
@@ -355,6 +554,41 @@ class UI {
         const url = driveManager.getFolderUrl();
         if (url) {
             window.open(url, '_blank');
+        }
+    }
+
+    // Helper: Show button loading state
+    showBtnLoading(btn) {
+        if (!btn) return;
+        btn.dataset.originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-sm"></span> Processing...';
+        // Add minimal spinner css if not exists
+        if (!document.getElementById('spinner-style')) {
+            const style = document.createElement('style');
+            style.id = 'spinner-style';
+            style.textContent = `
+                .spinner-sm {
+                    display: inline-block;
+                    width: 12px;
+                    height: 12px;
+                    border: 2px solid rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    border-top-color: #fff;
+                    animation: spin 1s ease-in-out infinite;
+                    margin-right: 8px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Helper: Hide button loading state
+    hideBtnLoading(btn) {
+        if (!btn) return;
+        btn.disabled = false;
+        if (btn.dataset.originalText) {
+            btn.innerHTML = btn.dataset.originalText;
         }
     }
 }

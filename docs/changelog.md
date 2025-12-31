@@ -87,6 +87,28 @@
 
 **Impact**: Better tracking, supports multiple loans per borrower
 
+**Impact**: Better tracking, supports multiple loans per borrower
+
+---
+
+## Version 1.2.0 - UX Enhancements (December 31, 2024)
+
+### ✨ New Features
+
+#### Loan Management Improvements
+- ✅ **Loan Details Modal** - Comprehensive view of loan details
+- ✅ **Edit Capability** - Update status, amounts, and details of existing loans
+- ✅ **Contact Management** - Edit and manage borrower contacts
+
+#### Smart Data Entry
+- ✅ **Auto-Suggestions** - Forms now suggest existing Borrowers, Referrers, and Recipients
+- ✅ **Smart Dropdowns** - Dynamic lists based on historical data
+
+#### UX Polish
+- ✅ **Loading States** - Visual feedback during form submissions preventing double-clicks
+- ✅ **Clean Navigation** - Bottom nav hidden until user authenticates
+- ✅ **Robust Profile Pictures** - Fallback for broken Google profile images
+
 ---
 
 ## Pending Enhancements (Planned for v1.2.0+)
@@ -94,12 +116,12 @@
 See `enhancements_roadmap.md` for complete list.
 
 ### High Priority
-- [ ] Loan details modal with edit capability
-- [ ] Smart dropdowns from existing data
-- [ ] Compact payment cards with grouping
-- [ ] Loading states for attachments
-- [ ] Hide navigation before login
-- [ ] Fix profile picture display
+- [x] Loan details modal with edit capability
+- [x] Smart dropdowns from existing data
+- [x] Compact payment cards with grouping (Pending)
+- [x] Loading states for attachments
+- [x] Hide navigation before login
+- [x] Fix profile picture display
 
 ### Medium Priority
 - [ ] Analytics dashboard
@@ -120,12 +142,10 @@ See `enhancements_roadmap.md` for complete list.
 ## Known Issues
 
 ### Current Limitations
-1. **No Edit Capability** - Can't edit loans after creation
+1. **Limited Edit Capability** - Can edit loans, but not yet bulk edit
 2. **No Grouping** - Payments not grouped by loan/month
-3. **Manual Entry** - No smart dropdowns for existing values
-4. **Verbose UI** - Payment cards not optimized for scanning
-5. **No Loading States** - Can submit forms multiple times
-6. **Minor UI Issues** - Navigation visible before login, profile picture may not load
+3. **Verbose UI** - Payment cards not optimized for scanning
+4. **Minor UI Issues** - Some transitions could be smoother
 
 ### Technical Debt
 1. **No Client-Side Cache** - Fetches data on every view
@@ -205,6 +225,6 @@ See `enhancements_roadmap.md` for:
 
 ---
 
-**Last Updated**: December 8, 2024  
-**Current Version**: 1.1.0  
+**Last Updated**: December 31, 2024  
+**Current Version**: 1.2.0  
 **Status**: ✅ Deployed and Functional

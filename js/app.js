@@ -1,104 +1,104 @@
 // Main Application
 class App {
-    constructor() {
-        this.initialized = false;
+  constructor() {
+    this.initialized = false;
+  }
+
+  // Initialize the application
+  async init() {
+    try {
+      // Register service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('Service Worker registered:', reg))
+          .catch(err => console.error('Service Worker registration failed:', err));
+      }
+
+      // Initialize auth
+      await auth.init();
+
+      // Initialize UI
+      ui.init();
+
+      // Setup app event listeners
+      this.setupEventListeners();
+
+      // Check for install prompt
+      this.setupInstallPrompt();
+
+      this.initialized = true;
+    } catch (error) {
+      console.error('Error initializing app:', error);
+      ui.showToast('Error initializing application', 'error');
+    }
+  }
+
+  // Setup event listeners
+  setupEventListeners() {
+    // Sign in button
+    const signInBtn = document.getElementById('sign-in-btn');
+    if (signInBtn) {
+      signInBtn.addEventListener('click', () => auth.signIn());
     }
 
-    // Initialize the application
-    async init() {
-        try {
-            // Register service worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered:', reg))
-                    .catch(err => console.error('Service Worker registration failed:', err));
-            }
-
-            // Initialize auth
-            await auth.init();
-
-            // Initialize UI
-            ui.init();
-
-            // Setup app event listeners
-            this.setupEventListeners();
-
-            // Check for install prompt
-            this.setupInstallPrompt();
-
-            this.initialized = true;
-        } catch (error) {
-            console.error('Error initializing app:', error);
-            ui.showToast('Error initializing application', 'error');
-        }
+    // Sign out button
+    const signOutBtn = document.getElementById('sign-out-btn');
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', () => auth.signOut());
     }
 
-    // Setup event listeners
-    setupEventListeners() {
-        // Sign in button
-        const signInBtn = document.getElementById('sign-in-btn');
-        if (signInBtn) {
-            signInBtn.addEventListener('click', () => auth.signIn());
-        }
-
-        // Sign out button
-        const signOutBtn = document.getElementById('sign-out-btn');
-        if (signOutBtn) {
-            signOutBtn.addEventListener('click', () => auth.signOut());
-        }
-
-        // Add loan button
-        const addLoanBtn = document.getElementById('add-loan-btn');
-        if (addLoanBtn) {
-            addLoanBtn.addEventListener('click', () => this.showAddLoanForm());
-        }
-
-        // Add payment button
-        const addPaymentBtn = document.getElementById('add-payment-btn');
-        if (addPaymentBtn) {
-            addPaymentBtn.addEventListener('click', () => this.showAddPaymentForm());
-        }
-
-        // Open spreadsheet button
-        const openSheetBtn = document.getElementById('open-sheet-btn');
-        if (openSheetBtn) {
-            openSheetBtn.addEventListener('click', () => ui.openSpreadsheet());
-        }
+    // Add loan button
+    const addLoanBtn = document.getElementById('add-loan-btn');
+    if (addLoanBtn) {
+      addLoanBtn.addEventListener('click', () => this.showAddLoanForm());
     }
 
-    // Setup PWA install prompt
-    setupInstallPrompt() {
-        let deferredPrompt;
+    // Add payment button
+    const addPaymentBtn = document.getElementById('add-payment-btn');
+    if (addPaymentBtn) {
+      addPaymentBtn.addEventListener('click', () => this.showAddPaymentForm());
+    }
 
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
+    // Open spreadsheet button
+    const openSheetBtn = document.getElementById('open-sheet-btn');
+    if (openSheetBtn) {
+      openSheetBtn.addEventListener('click', () => ui.openSpreadsheet());
+    }
+  }
 
-            // Show install button
-            const installBtn = document.getElementById('install-btn');
-            if (installBtn) {
-                installBtn.classList.remove('hidden');
-                installBtn.addEventListener('click', async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        console.log(`User response to install prompt: ${outcome}`);
-                        deferredPrompt = null;
-                        installBtn.classList.add('hidden');
-                    }
-                });
-            }
+  // Setup PWA install prompt
+  setupInstallPrompt() {
+    let deferredPrompt;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // Show install button
+      const installBtn = document.getElementById('install-btn');
+      if (installBtn) {
+        installBtn.classList.remove('hidden');
+        installBtn.addEventListener('click', async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`User response to install prompt: ${outcome}`);
+            deferredPrompt = null;
+            installBtn.classList.add('hidden');
+          }
         });
+      }
+    });
 
-        window.addEventListener('appinstalled', () => {
-            console.log('PWA installed');
-            ui.showToast('App installed successfully!', 'success');
-        });
-    }
+    window.addEventListener('appinstalled', () => {
+      console.log('PWA installed');
+      ui.showToast('App installed successfully!', 'success');
+    });
+  }
 
-    // Show add loan form
-    showAddLoanForm() {
-        const formHtml = `
+  // Show add loan form
+  showAddLoanForm() {
+    const formHtml = `
       <form id="add-loan-form" class="form">
         <div class="form-group">
           <label class="form-label">Date Given *</label>
@@ -130,7 +130,7 @@ class App {
         <div class="grid grid-2">
           <div class="form-group">
             <label class="form-label">Via (Referrer/Surety)</label>
-            <input type="text" name="via" class="form-input" placeholder="Who referred or is backing">
+            <input type="text" name="via" class="form-input" placeholder="Who referred or is backing" list="via-list">
           </div>
           
           <div class="form-group">
@@ -162,109 +162,114 @@ class App {
       </form>
     `;
 
-        const footer = `
+    const footer = `
       <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
       <button type="button" class="btn btn-primary" onclick="app.submitLoanForm()">Add Loan</button>
     `;
 
-        ui.showModal('Add New Loan', formHtml, footer);
+    ui.showModal('Add New Loan', formHtml, footer);
 
-        // Handle image preview
-        const fileInput = document.getElementById('loan-attachments');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                const preview = document.getElementById('loan-attachments-preview');
-                if (preview) {
-                    const files = Array.from(e.target.files);
-                    preview.innerHTML = files.map(f => `<small>${f.name}</small>`).join('<br>');
-                }
-            });
+    // Handle image preview
+    const fileInput = document.getElementById('loan-attachments');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const preview = document.getElementById('loan-attachments-preview');
+        if (preview) {
+          const files = Array.from(e.target.files);
+          preview.innerHTML = files.map(f => `<small>${f.name}</small>`).join('<br>');
         }
+      });
     }
+  }
 
-    // Add contact field
-    addContactField() {
-        const container = document.getElementById('contacts-container');
-        if (container) {
-            const entry = document.createElement('div');
-            entry.className = 'contact-entry grid grid-2';
-            entry.style.cssText = 'gap: 0.5rem; margin-bottom: 0.5rem;';
-            entry.innerHTML = `
+  // Add contact field
+  addContactField() {
+    const container = document.getElementById('contacts-container');
+    if (container) {
+      const entry = document.createElement('div');
+      entry.className = 'contact-entry grid grid-2';
+      entry.style.cssText = 'gap: 0.5rem; margin-bottom: 0.5rem;';
+      entry.innerHTML = `
         <input type="text" class="form-input" placeholder="Name" data-contact="name">
         <input type="text" class="form-input" placeholder="Relation" data-contact="relation">
         <input type="tel" class="form-input" placeholder="Phone" data-contact="phone" style="grid-column: span 2;">
       `;
-            container.appendChild(entry);
-        }
+      container.appendChild(entry);
+    }
+  }
+
+  // Submit loan form
+  async submitLoanForm() {
+    const form = document.getElementById('add-loan-form');
+    if (!form || !form.checkValidity()) {
+      ui.showToast('Please fill in all required fields', 'error');
+      form.reportValidity();
+      return;
     }
 
-    // Submit loan form
-    async submitLoanForm() {
-        const form = document.getElementById('add-loan-form');
-        if (!form || !form.checkValidity()) {
-            ui.showToast('Please fill in all required fields', 'error');
-            form.reportValidity();
-            return;
-        }
+    const submitBtn = document.querySelector('.modal-footer .btn-primary');
+    ui.showBtnLoading(submitBtn);
 
-        const formData = new FormData(form);
+    const formData = new FormData(form);
 
-        // Collect contacts
-        const contacts = [];
-        document.querySelectorAll('.contact-entry').forEach(entry => {
-            const name = entry.querySelector('[data-contact="name"]').value;
-            const relation = entry.querySelector('[data-contact="relation"]').value;
-            const phone = entry.querySelector('[data-contact="phone"]').value;
+    // Collect contacts
+    const contacts = [];
+    document.querySelectorAll('.contact-entry').forEach(entry => {
+      const name = entry.querySelector('[data-contact="name"]').value;
+      const relation = entry.querySelector('[data-contact="relation"]').value;
+      const phone = entry.querySelector('[data-contact="phone"]').value;
 
-            if (name || relation || phone) {
-                contacts.push({ name, relation, phone });
-            }
-        });
+      if (name || relation || phone) {
+        contacts.push({ name, relation, phone });
+      }
+    });
 
-        // Handle image uploads
-        let attachments = '';
-        const fileInput = document.getElementById('loan-attachments');
-        if (fileInput && fileInput.files.length > 0) {
-            try {
-                ui.showToast('Uploading attachments...', 'info');
-                const uploadedImages = await driveManager.uploadMultipleImages(
-                    Array.from(fileInput.files),
-                    `loan_${formData.get('name')}`
-                );
-                attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
-            } catch (error) {
-                ui.showToast('Error uploading attachments', 'error');
-                return;
-            }
-        }
-
-        const loanData = {
-            dateGiven: formData.get('dateGiven'),
-            name: formData.get('name'),
-            amount: parseFloat(formData.get('amount')),
-            interestRate: parseFloat(formData.get('interestRate')),
-            details: formData.get('details'),
-            via: formData.get('via'),
-            hasProNote: formData.get('hasProNote') === 'true',
-            status: 'Active',
-            contacts: contacts,
-            attachments: attachments
-        };
-
-        try {
-            await sheetsManager.addLoan(loanData);
-            ui.showToast('Loan added successfully!', 'success');
-            document.querySelector('.modal-overlay').remove();
-            ui.loadLoans();
-        } catch (error) {
-            console.error('Error adding loan:', error);
-            ui.showToast('Error adding loan', 'error');
-        }
+    // Handle image uploads
+    let attachments = '';
+    const fileInput = document.getElementById('loan-attachments');
+    if (fileInput && fileInput.files.length > 0) {
+      try {
+        ui.showToast('Uploading attachments...', 'info');
+        const uploadedImages = await driveManager.uploadMultipleImages(
+          Array.from(fileInput.files),
+          `loan_${formData.get('name')}`
+        );
+        attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
+      } catch (error) {
+        ui.showToast('Error uploading attachments', 'error');
+        ui.hideBtnLoading(submitBtn);
+        return;
+      }
     }
 
-    // Show add payment form
-    showAddPaymentForm() {
-        const formHtml = `
+    const loanData = {
+      dateGiven: formData.get('dateGiven'),
+      name: formData.get('name'),
+      amount: parseFloat(formData.get('amount')),
+      interestRate: parseFloat(formData.get('interestRate')),
+      details: formData.get('details'),
+      via: formData.get('via'),
+      hasProNote: formData.get('hasProNote') === 'true',
+      status: 'Active',
+      contacts: contacts,
+      attachments: attachments
+    };
+
+    try {
+      await sheetsManager.addLoan(loanData);
+      ui.showToast('Loan added successfully!', 'success');
+      document.querySelector('.modal-overlay').remove();
+      ui.loadLoans();
+    } catch (error) {
+      console.error('Error adding loan:', error);
+      ui.showToast('Error adding loan', 'error');
+      ui.hideBtnLoading(submitBtn);
+    }
+  }
+
+  // Show add payment form
+  showAddPaymentForm() {
+    const formHtml = `
       <form id="add-payment-form" class="form">
         <div class="form-group">
           <label class="form-label">Payment Date *</label>
@@ -306,7 +311,7 @@ class App {
           
           <div class="form-group">
             <label class="form-label">Received By</label>
-            <input type="text" name="receivedBy" class="form-input" placeholder="Self" value="Self">
+            <input type="text" name="receivedBy" class="form-input" placeholder="Self" value="Self" list="received-by-list">
           </div>
         </div>
         
@@ -323,108 +328,187 @@ class App {
       </form>
     `;
 
-        const footer = `
+    const footer = `
       <button type="button" class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
       <button type="button" class="btn btn-primary" onclick="app.submitPaymentForm()">Add Payment</button>
     `;
 
-        ui.showModal('Record Interest Payment', formHtml, footer);
-
-        // Populate borrower list
-        this.populateBorrowerList();
-
-        // Handle image preview
-        const fileInput = document.getElementById('payment-attachments');
-        if (fileInput) {
-            fileInput.addEventListener('change', (e) => {
-                const preview = document.getElementById('payment-attachments-preview');
-                if (preview) {
-                    const files = Array.from(e.target.files);
-                    preview.innerHTML = files.map(f => `<small>${f.name}</small>`).join('<br>');
-                }
-            });
-        }
-    }
+    ui.showModal('Record Interest Payment', formHtml, footer);
 
     // Populate borrower list
-    async populateBorrowerList() {
-        try {
-            const loans = await sheetsManager.getLoans();
-            const datalist = document.getElementById('borrower-list');
-            if (datalist) {
-                datalist.innerHTML = loans
-                    .map(loan => `<option value="${loan.name}">`)
-                    .join('');
-            }
-        } catch (error) {
-            console.error('Error loading borrowers:', error);
+    this.populateBorrowerList();
+
+    // Handle image preview
+    const fileInput = document.getElementById('payment-attachments');
+    if (fileInput) {
+      fileInput.addEventListener('change', (e) => {
+        const preview = document.getElementById('payment-attachments-preview');
+        if (preview) {
+          const files = Array.from(e.target.files);
+          preview.innerHTML = files.map(f => `<small>${f.name}</small>`).join('<br>');
         }
+      });
+    }
+  }
+
+  // Populate borrower list
+  async populateBorrowerList() {
+    this.populateSmartDropdowns();
+  }
+
+  // Populate all smart dropdowns
+  async populateSmartDropdowns() {
+    try {
+      // Borrowers (Name column C -> index 2)
+      const borrowers = await sheetsManager.getDistinctValues('Loans', 2);
+      this.updateDatalist('borrower-list', borrowers);
+
+      // Via (Via column G -> index 6)
+      const via = await sheetsManager.getDistinctValues('Loans', 6);
+      this.updateDatalist('via-list', via);
+
+      // Received By (Received By column G -> index 6 in Payments)
+      const receivedBy = await sheetsManager.getDistinctValues('Interest Payments', 6);
+      this.updateDatalist('received-by-list', receivedBy);
+    } catch (error) {
+      console.error('Error populating dropdowns:', error);
+    }
+  }
+
+  // Helper: Update datalist
+  updateDatalist(id, values) {
+    const datalist = document.getElementById(id);
+    if (datalist) {
+      datalist.innerHTML = values
+        .map(val => `<option value="${val}">`)
+        .join('');
+    }
+  }
+
+  // Submit payment form
+  async submitPaymentForm() {
+    const form = document.getElementById('add-payment-form');
+    if (!form || !form.checkValidity()) {
+      ui.showToast('Please fill in all required fields', 'error');
+      form.reportValidity();
+      return;
     }
 
-    // Submit payment form
-    async submitPaymentForm() {
-        const form = document.getElementById('add-payment-form');
-        if (!form || !form.checkValidity()) {
-            ui.showToast('Please fill in all required fields', 'error');
-            form.reportValidity();
-            return;
-        }
+    const submitBtn = document.querySelector('.modal-footer .btn-primary');
+    ui.showBtnLoading(submitBtn);
 
-        const formData = new FormData(form);
+    const formData = new FormData(form);
 
-        // Handle image uploads
-        let attachments = '';
-        const fileInput = document.getElementById('payment-attachments');
-        if (fileInput && fileInput.files.length > 0) {
-            try {
-                ui.showToast('Uploading attachments...', 'info');
-                const uploadedImages = await driveManager.uploadMultipleImages(
-                    Array.from(fileInput.files),
-                    `payment_${formData.get('borrowerName')}`
-                );
-                attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
-            } catch (error) {
-                ui.showToast('Error uploading attachments', 'error');
-                return;
-            }
-        }
-
-        const paymentData = {
-            paymentDate: formData.get('paymentDate'),
-            borrowerName: formData.get('borrowerName'),
-            loanReference: formData.get('borrowerName'), // Using name as reference
-            amount: parseFloat(formData.get('amount')),
-            paymentType: formData.get('paymentType'),
-            paymentMethod: formData.get('paymentMethod'),
-            receivedBy: formData.get('receivedBy') || 'Self',
-            notes: formData.get('notes'),
-            attachments: attachments
-        };
-
-        try {
-            await sheetsManager.addPayment(paymentData);
-            ui.showToast('Payment recorded successfully!', 'success');
-            document.querySelector('.modal-overlay').remove();
-
-            // Refresh both views
-            if (ui.currentView === 'payments') {
-                ui.loadPayments();
-            } else {
-                ui.loadLoans();
-            }
-        } catch (error) {
-            console.error('Error adding payment:', error);
-            ui.showToast('Error recording payment', 'error');
-        }
+    // Handle image uploads
+    let attachments = '';
+    const fileInput = document.getElementById('payment-attachments');
+    if (fileInput && fileInput.files.length > 0) {
+      try {
+        ui.showToast('Uploading attachments...', 'info');
+        const uploadedImages = await driveManager.uploadMultipleImages(
+          Array.from(fileInput.files),
+          `payment_${formData.get('borrowerName')}`
+        );
+        attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
+      } catch (error) {
+        ui.showToast('Error uploading attachments', 'error');
+        ui.hideBtnLoading(submitBtn);
+        return;
+      }
     }
+
+    const paymentData = {
+      paymentDate: formData.get('paymentDate'),
+      borrowerName: formData.get('borrowerName'),
+      loanReference: formData.get('borrowerName'), // Using name as reference
+      amount: parseFloat(formData.get('amount')),
+      paymentType: formData.get('paymentType'),
+      paymentMethod: formData.get('paymentMethod'),
+      receivedBy: formData.get('receivedBy') || 'Self',
+      notes: formData.get('notes'),
+      attachments: attachments
+    };
+
+    try {
+      await sheetsManager.addPayment(paymentData);
+      ui.showToast('Payment recorded successfully!', 'success');
+      document.querySelector('.modal-overlay').remove();
+
+      // Refresh both views
+      if (ui.currentView === 'payments') {
+        ui.loadPayments();
+      } else {
+        ui.loadLoans();
+      }
+    } catch (error) {
+      console.error('Error adding payment:', error);
+      ui.showToast('Error recording payment', 'error');
+      ui.hideBtnLoading(submitBtn);
+    }
+  }
+
+  // Submit edit loan form
+  async submitEditLoanForm() {
+    const form = document.getElementById('edit-loan-form');
+    if (!form || !form.checkValidity()) {
+      ui.showToast('Please fill in all required fields', 'error');
+      form.reportValidity();
+      return;
+    }
+
+    const submitBtn = document.querySelector('.modal-footer .btn-primary');
+    ui.showBtnLoading(submitBtn);
+
+    const formData = new FormData(form);
+    const rowIndex = parseInt(formData.get('rowIndex'));
+
+    // Parse contacts
+    let contacts = [];
+    try {
+      contacts = JSON.parse(formData.get('contactsJson') || '[]');
+    } catch (e) {
+      ui.showToast('Invalid Contacts JSON', 'error');
+      ui.hideBtnLoading(submitBtn);
+      return;
+    }
+
+    const loanData = {
+      loanId: formData.get('loanId'),
+      dateGiven: formData.get('dateGiven'),
+      name: formData.get('name'),
+      amount: parseFloat(formData.get('amount')),
+      interestRate: parseFloat(formData.get('interestRate')),
+      details: formData.get('details'),
+      via: formData.get('via'),
+      hasProNote: formData.get('hasProNote') === 'true',
+      status: formData.get('status'),
+      dateOfClosure: formData.get('dateOfClosure'),
+      contacts: contacts,
+      attachments: formData.get('existingAttachments') // For now, not editing attachments here
+    };
+
+    try {
+      await sheetsManager.updateLoan(rowIndex, loanData);
+      ui.showToast('Loan updated successfully!', 'success');
+      document.querySelector('.modal-overlay').remove();
+      ui.loadLoans();
+      // Also refresh dropdowns as names might have changed
+      this.populateSmartDropdowns();
+    } catch (error) {
+      console.error('Error updating loan:', error);
+      ui.showToast('Error updating loan', 'error');
+      ui.hideBtnLoading(submitBtn);
+    }
+  }
 }
+
 
 // Create and initialize app
 const app = new App();
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => app.init());
+  document.addEventListener('DOMContentLoaded', () => app.init());
 } else {
-    app.init();
+  app.init();
 }
