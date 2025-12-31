@@ -439,8 +439,6 @@ class App {
           });
           loanSelector.setAttribute('data-listener-added', 'true');
         }
-          }
-        });
         
         // If a loan is pre-selected, populate the borrower name
         if (selectedLoanId) {
