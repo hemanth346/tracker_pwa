@@ -195,11 +195,13 @@
     window.addEventListener('auth:success', () => {
       document.getElementById('user-info').classList.remove('hidden');
       document.getElementById('open-sheet-btn').classList.remove('hidden');
+      document.getElementById('main-nav').classList.remove('hidden');
     });
 
     window.addEventListener('auth:signout', () => {
       document.getElementById('user-info').classList.add('hidden');
       document.getElementById('open-sheet-btn').classList.add('hidden');
+      document.getElementById('main-nav').classList.add('hidden');
     });
   </script>
 </body>

@@ -1,5 +1,5 @@
 // Service Worker for Loan Tracker PWA
-const CACHE_NAME = 'p2p-lending-v1';
+const CACHE_NAME = 'p2p-lending-v1.2';
 const urlsToCache = [
     './',
     './index.html',
