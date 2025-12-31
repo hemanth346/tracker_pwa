@@ -153,36 +153,30 @@ class UI {
             return;
         }
 
-        container.innerHTML = loans.map(loan => `
-      <div class="list-item" data-row="${loan.rowIndex}">
-        <div class="list-item-header">
-          <div>
-            <div class="list-item-title">${this.escapeHtml(loan.name)}</div>
-            <div class="list-item-meta">
-              <span>₹${this.formatNumber(loan.amount)}</span>
-              <span>${loan.interestRate}% monthly</span>
-              <span>${loan.dateGiven}</span>
-            </div>
-          </div>
-          <span class="badge badge-${this.getStatusBadgeClass(loan.status)}">${loan.status}</span>
-        </div>
-        ${loan.details ? `<p style="margin: 0.5rem 0; color: var(--text-secondary);">${this.escapeHtml(loan.details)}</p>` : ''}
-        <div class="list-item-meta" style="margin-top: 0.5rem;">
-          ${loan.via ? `<span>Via: ${this.escapeHtml(loan.via)}</span>` : ''}
-          ${loan.lastPaymentDate ? `<span>Last Payment: ${loan.lastPaymentDate}</span>` : ''}
-          ${loan.totalInterestPaid > 0 ? `<span>Total Interest: ₹${this.formatNumber(loan.totalInterestPaid)}</span>` : ''}
-          ${loan.paidTillMonth ? `<span>Paid Till: ${loan.paidTillMonth}</span>` : ''}
-        </div>
-        ${loan.contacts && loan.contacts.length > 0 ? `
-          <div style="margin-top: 0.5rem; font-size: 0.875rem;">
-            <strong>Contacts:</strong> ${loan.contacts.map(c => `${c.name} (${c.relation}): ${c.phone}`).join(', ')}
-          </div>
-        ` : ''}
-      </div>
-    `).join('');
+        // Add filter controls
+        const filterHtml = this.renderLoanFilters();
+        
+        // Get current filter settings
+        const groupBy = this.loanGroupBy || 'borrower';
+        const statusFilter = this.loanFilterStatus || 'all';
+        const amountFilter = this.loanFilterAmount || 'all';
+        
+        // Filter loans based on criteria
+        const filteredLoans = this.filterLoansByType(loans, statusFilter, amountFilter);
+        
+        // Group loans
+        const groupedLoans = this.groupLoans(filteredLoans, groupBy);
+        
+        // Render grouped loans
+        const groupsHtml = this.renderLoanGroups(groupedLoans, groupBy);
+        
+        container.innerHTML = filterHtml + groupsHtml;
+        
+        // Add event listeners for collapsible sections
+        this.attachLoanGroupToggleListeners();
 
-        // Add click handlers
-        container.querySelectorAll('.list-item').forEach(item => {
+        // Add click handlers for individual loan rows
+        container.querySelectorAll('.loan-row').forEach(item => {
             item.addEventListener('click', () => {
                 const rowIndex = parseInt(item.dataset.row);
                 const loan = loans.find(l => l.rowIndex === rowIndex);
@@ -418,6 +412,258 @@ class UI {
             filterTypeSelect.addEventListener('change', (e) => {
                 this.paymentFilterType = e.target.value;
                 this.loadPayments(); // Reload with new filter
+            });
+        }
+    }
+
+    // ====== LOAN GROUPING AND FILTERING METHODS ======
+
+    // Render loan filter controls
+    renderLoanFilters() {
+        return `
+            <div class="loan-filters" style="margin-bottom: 1rem; padding: 1rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
+                <div class="grid grid-3" style="gap: 1rem;">
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Group By:</label>
+                        <select id="loan-group-by-select" class="form-select" style="width: 100%;">
+                            <option value="borrower" ${(this.loanGroupBy === 'borrower' || !this.loanGroupBy) ? 'selected' : ''}>Borrower</option>
+                            <option value="month" ${this.loanGroupBy === 'month' ? 'selected' : ''}>Month</option>
+                            <option value="via" ${this.loanGroupBy === 'via' ? 'selected' : ''}>Via/Referrer</option>
+                            <option value="status" ${this.loanGroupBy === 'status' ? 'selected' : ''}>Status</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Filter by Status:</label>
+                        <select id="loan-filter-status-select" class="form-select" style="width: 100%;">
+                            <option value="all" ${(this.loanFilterStatus === 'all' || !this.loanFilterStatus) ? 'selected' : ''}>All Loans</option>
+                            <option value="Active" ${this.loanFilterStatus === 'Active' ? 'selected' : ''}>Active Only</option>
+                            <option value="Closed" ${this.loanFilterStatus === 'Closed' ? 'selected' : ''}>Closed Only</option>
+                            <option value="Defaulted" ${this.loanFilterStatus === 'Defaulted' ? 'selected' : ''}>Defaulted Only</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Filter by Amount:</label>
+                        <select id="loan-filter-amount-select" class="form-select" style="width: 100%;">
+                            <option value="all" ${(this.loanFilterAmount === 'all' || !this.loanFilterAmount) ? 'selected' : ''}>All Amounts</option>
+                            <option value="small" ${this.loanFilterAmount === 'small' ? 'selected' : ''}>< ₹50,000</option>
+                            <option value="medium" ${this.loanFilterAmount === 'medium' ? 'selected' : ''}>₹50,000 - ₹2,00,000</option>
+                            <option value="large" ${this.loanFilterAmount === 'large' ? 'selected' : ''}>&#62; ₹2,00,000</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Filter loans by status and amount
+    filterLoansByType(loans, statusFilter, amountFilter) {
+        let filteredLoans = loans;
+        
+        // Filter by status
+        if (statusFilter !== 'all') {
+            filteredLoans = filteredLoans.filter(loan => loan.status === statusFilter);
+        }
+        
+        // Filter by amount
+        if (amountFilter !== 'all') {
+            filteredLoans = filteredLoans.filter(loan => {
+                const amount = parseFloat(loan.amount) || 0;
+                switch (amountFilter) {
+                    case 'small': return amount < 50000;
+                    case 'medium': return amount >= 50000 && amount <= 200000;
+                    case 'large': return amount > 200000;
+                    default: return true;
+                }
+            });
+        }
+        
+        return filteredLoans;
+    }
+
+    // Group loans by specified criteria
+    groupLoans(loans, groupBy) {
+        const groups = {};
+        
+        loans.forEach(loan => {
+            let groupKey;
+            
+            switch (groupBy) {
+                case 'month':
+                    const date = new Date(loan.dateGiven);
+                    groupKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    break;
+                case 'via':
+                    groupKey = loan.via || 'Direct/Not Specified';
+                    break;
+                case 'status':
+                    groupKey = loan.status || 'Active';
+                    break;
+                case 'borrower':
+                default:
+                    groupKey = loan.name;
+                    break;
+            }
+            
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    loans: [],
+                    totalAmount: 0,
+                    totalInterestPaid: 0,
+                    groupKey: groupKey
+                };
+            }
+            
+            groups[groupKey].loans.push(loan);
+            groups[groupKey].totalAmount += parseFloat(loan.amount || 0);
+            groups[groupKey].totalInterestPaid += parseFloat(loan.totalInterestPaid || 0);
+        });
+        
+        return groups;
+    }
+
+    // Render loan groups with collapsible sections
+    renderLoanGroups(groups, groupBy) {
+        if (Object.keys(groups).length === 0) {
+            return '<div class="text-center" style="padding: 2rem;"><p class="text-secondary">No loans match the current filter.</p></div>';
+        }
+        
+        return Object.entries(groups)
+            .sort(([a], [b]) => {
+                // Sort by group key - for months, sort by date descending
+                if (groupBy === 'month') {
+                    return b.localeCompare(a);
+                }
+                return a.localeCompare(b);
+            })
+            .map(([groupKey, group]) => {
+                const groupTitle = this.getLoanGroupTitle(groupKey, groupBy);
+                const isExpanded = this.expandedLoanGroups?.has(groupKey) !== false; // Default to expanded
+                
+                return `
+                    <div class="loan-group" style="margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
+                        <div class="loan-group-header" 
+                             style="padding: 1rem; background: var(--surface); cursor: pointer; display: flex; justify-content: space-between; align-items: center;" 
+                             onclick="ui.toggleLoanGroup('${groupKey}')">
+                            <div>
+                                <div class="loan-group-title" style="font-weight: 500; margin-bottom: 0.25rem;">
+                                    <span class="loan-group-toggle-icon" style="margin-right: 0.5rem; font-family: monospace;">${isExpanded ? '▼' : '▶'}</span>
+                                    ${this.escapeHtml(groupTitle)}
+                                </div>
+                                <div class="loan-group-meta" style="font-size: 0.875rem; color: var(--text-secondary);">
+                                    Total Amount: ₹${this.formatNumber(group.totalAmount)} | 
+                                    Total Interest Received: ₹${this.formatNumber(group.totalInterestPaid)} | 
+                                    ${group.loans.length} loan${group.loans.length !== 1 ? 's' : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="loan-group-content" id="loan-group-${groupKey}" style="${isExpanded ? '' : 'display: none;'}">
+                            ${this.renderGroupLoans(group.loans)}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+    }
+
+    // Render individual loans within a group
+    renderGroupLoans(loans) {
+        return loans
+            .sort((a, b) => new Date(b.dateGiven) - new Date(a.dateGiven)) // Sort by date (newest first)
+            .map(loan => `
+                <div class="loan-row" data-row="${loan.rowIndex}" style="padding: 1rem; border-top: 1px solid var(--border); cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(99, 102, 241, 0.1)'" onmouseout="this.style.backgroundColor='transparent'">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 500; margin-bottom: 0.5rem;">${this.escapeHtml(loan.name)}</div>
+                            <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                                <span>₹${this.formatNumber(loan.amount)}</span>
+                                <span>${loan.interestRate}% monthly</span>
+                                <span>${loan.dateGiven}</span>
+                                ${loan.via ? `<span>Via: ${this.escapeHtml(loan.via)}</span>` : ''}
+                            </div>
+                            ${loan.details ? `<div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${this.escapeHtml(loan.details)}</div>` : ''}
+                            <div style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-secondary);">
+                                ${loan.lastPaymentDate ? `<span>Last Payment: ${loan.lastPaymentDate}</span>` : ''}
+                                ${loan.totalInterestPaid > 0 ? `<span>Total Interest: ₹${this.formatNumber(loan.totalInterestPaid)}</span>` : ''}
+                                ${loan.paidTillMonth ? `<span>Paid Till: ${loan.paidTillMonth}</span>` : ''}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="badge badge-${this.getStatusBadgeClass(loan.status)}">${loan.status}</span>
+                        </div>
+                    </div>
+                    ${loan.contacts && loan.contacts.length > 0 ? `
+                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                            <strong>Contacts:</strong> ${loan.contacts.map(c => `${c.name} (${c.relation}): ${c.phone}`).join(', ')}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+    }
+
+    // Get formatted loan group title
+    getLoanGroupTitle(groupKey, groupBy) {
+        switch (groupBy) {
+            case 'month':
+                const [year, month] = groupKey.split('-');
+                const date = new Date(year, month - 1);
+                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+            case 'via':
+                return groupKey;
+            case 'status':
+                return groupKey;
+            case 'borrower':
+            default:
+                return groupKey;
+        }
+    }
+
+    // Toggle loan group visibility
+    toggleLoanGroup(groupKey) {
+        if (!this.expandedLoanGroups) {
+            this.expandedLoanGroups = new Set();
+        }
+        
+        const contentElement = document.getElementById(`loan-group-${groupKey}`);
+        const toggleIcon = contentElement?.parentElement.querySelector('.loan-group-toggle-icon');
+        
+        if (contentElement) {
+            const isExpanded = contentElement.style.display !== 'none';
+            
+            if (isExpanded) {
+                contentElement.style.display = 'none';
+                this.expandedLoanGroups.delete(groupKey);
+                if (toggleIcon) toggleIcon.textContent = '▶';
+            } else {
+                contentElement.style.display = 'block';
+                this.expandedLoanGroups.add(groupKey);
+                if (toggleIcon) toggleIcon.textContent = '▼';
+            }
+        }
+    }
+
+    // Attach event listeners for loan filter changes
+    attachLoanGroupToggleListeners() {
+        const groupBySelect = document.getElementById('loan-group-by-select');
+        const filterStatusSelect = document.getElementById('loan-filter-status-select');
+        const filterAmountSelect = document.getElementById('loan-filter-amount-select');
+        
+        if (groupBySelect) {
+            groupBySelect.addEventListener('change', (e) => {
+                this.loanGroupBy = e.target.value;
+                this.loadLoans(); // Reload with new grouping
+            });
+        }
+        
+        if (filterStatusSelect) {
+            filterStatusSelect.addEventListener('change', (e) => {
+                this.loanFilterStatus = e.target.value;
+                this.loadLoans(); // Reload with new filter
+            });
+        }
+        
+        if (filterAmountSelect) {
+            filterAmountSelect.addEventListener('change', (e) => {
+                this.loanFilterAmount = e.target.value;
+                this.loadLoans(); // Reload with new filter
             });
         }
     }

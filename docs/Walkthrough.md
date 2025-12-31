@@ -14,7 +14,7 @@ I've successfully built a complete Progressive Web App for tracking peer-to-peer
 - Session persistence
 - Automatic token refresh handling
 
-#### 2. **Loan Management**
+#### 2. **Advanced Loan Management** 🆕 **Enhanced January 2026**
 - Add new loans with comprehensive details:
   - Date given, borrower name, amount
   - Monthly interest rate
@@ -25,6 +25,13 @@ I've successfully built a complete Progressive Web App for tracking peer-to-peer
   - Status tracking (Active/Closed/Defaulted)
   - Date of closure
   - Image attachments for pro notes
+
+- **🆕 Advanced Organization System**:
+  - **Group By Options**: Organize loans by Borrower, Month, Via/Referrer, or Status
+  - **Smart Filtering**: Filter by status (All/Active/Closed/Defaulted) and amount ranges
+  - **Interactive Groups**: Click group headers to expand/collapse (▼/▶ icons)
+  - **Summary Analytics**: View total amounts, interest received, and loan counts per group
+  - **Real-time Updates**: Instant filter application without page refresh
 
 - **Automatic Calculations**:
   - Last interest payment date
@@ -271,6 +278,66 @@ git push -u origin main
 **Option 3: Vercel** (Free)
 - Import from GitHub
 - Auto-deploy on push
+
+---
+
+## 📖 User Guide - Using the Loan Grouping Features 🆕
+
+### Viewing and Organizing Loans
+
+#### 1. **Access Loans Page**
+- Click "Loans" in the main navigation
+- All your loans will be displayed with the new grouping interface
+
+#### 2. **Using the Filter Controls Panel**
+At the top of the loans page, you'll see three filter dropdowns:
+
+**Group By**: Organize your loans by different criteria
+- **Borrower**: Groups loans by person (default) - useful when someone has multiple loans
+- **Month**: Groups by the month when loans were given - great for seeing lending patterns over time
+- **Via/Referrer**: Groups by how you found the borrower (referral source) - helpful for tracking referral effectiveness
+- **Status**: Groups by loan status (Active/Closed/Defaulted) - useful for portfolio management
+
+**Filter by Status**: Show only specific types of loans
+- **All Loans**: Shows all loans regardless of status
+- **Active Only**: Shows only currently active loans
+- **Closed Only**: Shows only completed/closed loans
+- **Defaulted Only**: Shows only defaulted loans
+
+**Filter by Amount**: Filter by loan size
+- **All Amounts**: Shows loans of any amount
+- **< ₹50,000**: Small loans only
+- **₹50,000 - ₹2,00,000**: Medium-sized loans
+- **> ₹2,00,000**: Large loans only
+
+#### 3. **Working with Grouped Data**
+- **Group Headers**: Show the group name with expand/collapse icons (▼ to collapse, ▶ to expand)
+- **Summary Statistics**: Each group displays:
+  - Total amount lent in that group
+  - Total interest received from that group
+  - Number of loans in the group
+- **Click to Expand/Collapse**: Click any group header to hide or show the loans in that group
+- **Hover Effects**: Hover over individual loan rows for visual feedback
+- **Click for Details**: Click any loan row to open the detailed loan information modal
+
+#### 4. **Real-time Updates**
+- All filters update immediately when changed - no need to refresh the page
+- Your grouping and filtering preferences are remembered within your session
+- Perfect for quickly analyzing different aspects of your loan portfolio
+
+### Example Use Cases
+
+**Portfolio Analysis**: Group by Status to quickly see how many Active vs Closed loans you have
+
+**Referral Tracking**: Group by Via/Referrer to see which referral sources are most productive
+
+**Time-based Analysis**: Group by Month to analyze your lending patterns over time
+
+**Risk Assessment**: Group by Status and filter by amount to identify large defaulted loans
+
+**Borrower Management**: Group by Borrower to see who has multiple loans and track their payment history
+
+This enhanced loan organization system makes it easy to manage and analyze your P2P lending portfolio from multiple perspectives! 🚀
 - Update authorized origins
 
 ## 🐛 Troubleshooting

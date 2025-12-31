@@ -1,5 +1,28 @@
 # Loan Tracker - Changelog
 
+## Version 1.3.0 - Loan Grouping and Filtering System (January 1, 2026)
+
+### 🚀 New Major Features
+- **Advanced Loan Organization**: Complete loan grouping and filtering system
+  - Group loans by: Borrower, Month (from date given), Via/Referrer, Status
+  - Filter by: Status (All/Active/Closed/Defaulted) and Amount ranges
+  - Collapsible group sections with expand/collapse icons (▼/▶)
+  - Group summary statistics: total amount, total interest received, loan count
+  - Real-time filter updates with immediate UI response
+  - Consistent UX patterns matching existing payment grouping system
+
+### 📊 Enhanced User Interface
+- **Interactive Filter Controls Panel**: 3-column layout for optimal organization
+- **Smart Group Management**: Click group headers to expand/collapse sections
+- **Hover Effects**: Visual feedback on loan rows with smooth transitions
+- **Click-to-View Details**: Direct access to loan details from group view
+
+### 🛠️ Technical Implementation
+- Added 8 new methods to UI class for comprehensive loan organization
+- Enhanced `renderLoans()` method with full backward compatibility
+- Implemented state management for expanded groups and filter preferences
+- Added event listeners for real-time filter and grouping updates
+
 ## Version 1.2.0 - Phase 1 Feedback Fixes (January 1, 2026)
 
 ### 🐛 Fixes Based on User Feedback

@@ -18,15 +18,21 @@ A beautiful, modern progressive web app for tracking lending activities. Built w
 - ⚡ **Loading States** - Visual feedback during operations ✅
 - 📊 **Payment Grouping** - Collapsible groups with filters and summaries ✅
 
+### New in v1.3.0 - Latest! 🎉
+- ✅ **Advanced Loan Grouping System** - Organize loans by Borrower, Month, Via/Referrer, or Status
+- ✅ **Smart Multi-Filter Controls** - Filter by status and amount ranges with real-time updates
+- ✅ **Interactive Group Management** - Collapsible sections with comprehensive summary statistics
+- ✅ **Enhanced User Experience** - Consistent patterns with hover effects and click-to-view details
+
+### New in v1.2.0
+- ✅ **Payment Grouping Feature** - Group payments by Loan ID, Borrower, or Month with collapsible sections
+
 ### Recently Fixed (v1.1.0)
 - ✅ Profile picture display issues
 - ✅ Smart dropdown functionality 
-- ✅ Amount field ₹1,000 increments
+- ✅ Amount field step optimizations
 - ✅ JavaScript errors and undefined variables
 - ✅ Code quality improvements
-
-### New in v1.1.0
-- ✅ **Payment Grouping Feature** - Group payments by Loan ID, Borrower, or Month with collapsible sections and filtering options
 
 ## 🚀 Quick Start
 
