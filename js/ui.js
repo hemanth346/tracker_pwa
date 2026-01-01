@@ -4,7 +4,7 @@ class UI {
         this.currentView = 'loans';
         this.currentLoan = null;
         this.currentPayment = null;
-        
+
         // Pagination settings
         this.itemsPerPage = 20;
         this.loansPage = 1;
@@ -170,26 +170,26 @@ class UI {
 
         // Add filter controls only if not appending
         const filterHtml = append ? '' : this.renderLoanFilters();
-        
+
         // Get current filter settings
         const groupBy = this.loanGroupBy || 'borrower';
         const statusFilter = this.loanFilterStatus || 'all';
         const amountFilter = this.loanFilterAmount || 'all';
-        
+
         // Filter loans based on criteria
         const filteredLoans = this.filterLoansByType(this.allLoans, statusFilter, amountFilter);
-        
+
         // Apply pagination to filtered loans
         const startIndex = (this.loansPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
         const paginatedLoans = filteredLoans.slice(0, endIndex);
-        
+
         // Group loans
         const groupedLoans = this.groupLoans(paginatedLoans, groupBy);
-        
+
         // Render grouped loans
         const groupsHtml = this.renderLoanGroups(groupedLoans, groupBy);
-        
+
         // Add load more button if there are more items
         const hasMore = endIndex < filteredLoans.length;
         const loadMoreHtml = hasMore ? `
@@ -199,7 +199,7 @@ class UI {
                 </button>
             </div>
         ` : '';
-        
+
         if (append) {
             // Find the existing content and replace just the groups
             const existingFilterHtml = container.querySelector('.loan-filters')?.outerHTML || '';
@@ -207,7 +207,7 @@ class UI {
         } else {
             container.innerHTML = filterHtml + groupsHtml + loadMoreHtml;
         }
-        
+
         // Add event listener for load more button
         const loadMoreBtn = document.getElementById('load-more-loans');
         if (loadMoreBtn) {
@@ -216,7 +216,7 @@ class UI {
                 this.renderLoans(this.allLoans, true);
             });
         }
-        
+
         // Add event listeners for collapsible sections
         this.attachLoanGroupToggleListeners();
 
@@ -264,25 +264,25 @@ class UI {
 
         // Add filter controls only if not appending
         const filterHtml = append ? '' : this.renderPaymentFilters();
-        
+
         // Get current filter settings
         const groupBy = this.paymentGroupBy || 'loanId';
         const filterType = this.paymentFilterType || 'all';
-        
+
         // Filter payments based on type
         const filteredPayments = this.filterPaymentsByType(this.allPayments, filterType);
-        
+
         // Apply pagination to filtered payments
         const startIndex = (this.paymentsPage - 1) * this.itemsPerPage;
         const endIndex = startIndex + this.itemsPerPage;
         const paginatedPayments = filteredPayments.slice(0, endIndex);
-        
+
         // Group payments
         const groupedPayments = this.groupPayments(paginatedPayments, groupBy);
-        
+
         // Render grouped payments
         const groupsHtml = this.renderPaymentGroups(groupedPayments, groupBy);
-        
+
         // Add load more button if there are more items
         const hasMore = endIndex < filteredPayments.length;
         const loadMoreHtml = hasMore ? `
@@ -292,7 +292,7 @@ class UI {
                 </button>
             </div>
         ` : '';
-        
+
         if (append) {
             // Find the existing content and replace just the groups
             const existingFilterHtml = container.querySelector('.payment-filters')?.outerHTML || '';
@@ -300,7 +300,7 @@ class UI {
         } else {
             container.innerHTML = filterHtml + groupsHtml + loadMoreHtml;
         }
-        
+
         // Add event listener for load more button
         const loadMoreBtn = document.getElementById('load-more-payments');
         if (loadMoreBtn) {
@@ -309,7 +309,7 @@ class UI {
                 this.renderPayments(this.allPayments, true);
             });
         }
-        
+
         // Add event listeners for collapsible sections
         this.attachGroupToggleListeners();
     }
@@ -350,10 +350,10 @@ class UI {
     // Group payments by specified criteria
     groupPayments(payments, groupBy) {
         const groups = {};
-        
+
         payments.forEach(payment => {
             let groupKey;
-            
+
             switch (groupBy) {
                 case 'borrower':
                     groupKey = payment.borrowerName;
@@ -367,7 +367,7 @@ class UI {
                     groupKey = payment.loanReference || payment.borrowerName;
                     break;
             }
-            
+
             if (!groups[groupKey]) {
                 groups[groupKey] = {
                     payments: [],
@@ -375,11 +375,11 @@ class UI {
                     groupKey: groupKey
                 };
             }
-            
+
             groups[groupKey].payments.push(payment);
             groups[groupKey].totalAmount += parseFloat(payment.amount || 0);
         });
-        
+
         return groups;
     }
 
@@ -388,13 +388,13 @@ class UI {
         if (Object.keys(groups).length === 0) {
             return '<div class="text-center" style="padding: 2rem;"><p class="text-secondary">No payments match the current filter.</p></div>';
         }
-        
+
         return Object.entries(groups)
             .sort(([a], [b]) => b.localeCompare(a)) // Sort groups by key (newest first)
             .map(([groupKey, group]) => {
                 const groupTitle = this.getGroupTitle(groupKey, groupBy);
                 const isExpanded = this.expandedGroups?.has(groupKey) !== false; // Default to expanded
-                
+
                 return `
                     <div class="payment-group" style="margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
                         <div class="payment-group-header" 
@@ -458,13 +458,13 @@ class UI {
         if (!this.expandedGroups) {
             this.expandedGroups = new Set();
         }
-        
+
         const contentElement = document.getElementById(`group-${groupKey}`);
         const toggleIcon = contentElement?.parentElement.querySelector('.group-toggle-icon');
-        
+
         if (contentElement) {
             const isExpanded = contentElement.style.display !== 'none';
-            
+
             if (isExpanded) {
                 contentElement.style.display = 'none';
                 this.expandedGroups.delete(groupKey);
@@ -481,14 +481,14 @@ class UI {
     attachGroupToggleListeners() {
         const groupBySelect = document.getElementById('group-by-select');
         const filterTypeSelect = document.getElementById('filter-type-select');
-        
+
         if (groupBySelect) {
             groupBySelect.addEventListener('change', (e) => {
                 this.paymentGroupBy = e.target.value;
                 this.loadPayments(); // Reload with new grouping
             });
         }
-        
+
         if (filterTypeSelect) {
             filterTypeSelect.addEventListener('change', (e) => {
                 this.paymentFilterType = e.target.value;
@@ -557,7 +557,7 @@ class UI {
         // Get search criteria from inputs
         const searchInput = document.getElementById('loan-search-input');
         const dateFilter = document.getElementById('loan-date-filter');
-        
+
         const searchCriteria = {
             query: searchInput ? searchInput.value : '',
             status: statusFilter !== 'all' ? statusFilter : '',
@@ -571,7 +571,7 @@ class UI {
         if (searchCriteria.query || searchCriteria.status || searchCriteria.dateFrom) {
             filteredLoans = searchManager.searchLoans(loans, searchCriteria);
         }
-        
+
         // Additional amount filter (legacy support)
         if (amountFilter !== 'all') {
             filteredLoans = filteredLoans.filter(loan => {
@@ -587,7 +587,7 @@ class UI {
 
         // Update search summary
         this.updateLoanSearchSummary(loans.length, filteredLoans.length, searchCriteria);
-        
+
         return filteredLoans;
     }
 
@@ -603,10 +603,10 @@ class UI {
     // Group loans by specified criteria
     groupLoans(loans, groupBy) {
         const groups = {};
-        
+
         loans.forEach(loan => {
             let groupKey;
-            
+
             switch (groupBy) {
                 case 'month':
                     const date = new Date(loan.dateGiven);
@@ -623,7 +623,7 @@ class UI {
                     groupKey = loan.name;
                     break;
             }
-            
+
             if (!groups[groupKey]) {
                 groups[groupKey] = {
                     loans: [],
@@ -632,12 +632,12 @@ class UI {
                     groupKey: groupKey
                 };
             }
-            
+
             groups[groupKey].loans.push(loan);
             groups[groupKey].totalAmount += parseFloat(loan.amount || 0);
             groups[groupKey].totalInterestPaid += parseFloat(loan.totalInterestPaid || 0);
         });
-        
+
         return groups;
     }
 
@@ -646,7 +646,7 @@ class UI {
         if (Object.keys(groups).length === 0) {
             return '<div class="text-center" style="padding: 2rem;"><p class="text-secondary">No loans match the current filter.</p></div>';
         }
-        
+
         return Object.entries(groups)
             .sort(([a], [b]) => {
                 // Sort by group key - for months, sort by date descending
@@ -658,7 +658,7 @@ class UI {
             .map(([groupKey, group]) => {
                 const groupTitle = this.getLoanGroupTitle(groupKey, groupBy);
                 const isExpanded = this.expandedLoanGroups?.has(groupKey) !== false; // Default to expanded
-                
+
                 return `
                     <div class="loan-group" style="margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
                         <div class="loan-group-header" 
@@ -741,13 +741,13 @@ class UI {
         if (!this.expandedLoanGroups) {
             this.expandedLoanGroups = new Set();
         }
-        
+
         const contentElement = document.getElementById(`loan-group-${groupKey}`);
         const toggleIcon = contentElement?.parentElement.querySelector('.loan-group-toggle-icon');
-        
+
         if (contentElement) {
             const isExpanded = contentElement.style.display !== 'none';
-            
+
             if (isExpanded) {
                 contentElement.style.display = 'none';
                 this.expandedLoanGroups.delete(groupKey);
@@ -768,21 +768,21 @@ class UI {
         const searchInput = document.getElementById('loan-search-input');
         const clearSearchBtn = document.getElementById('clear-loan-search');
         const dateFilter = document.getElementById('loan-date-filter');
-        
+
         if (groupBySelect) {
             groupBySelect.addEventListener('change', (e) => {
                 this.loanGroupBy = e.target.value;
                 this.loadLoans(); // Reload with new grouping
             });
         }
-        
+
         if (filterStatusSelect) {
             filterStatusSelect.addEventListener('change', (e) => {
                 this.loanFilterStatus = e.target.value;
                 this.loadLoans(); // Reload with new filter
             });
         }
-        
+
         if (filterAmountSelect) {
             filterAmountSelect.addEventListener('change', (e) => {
                 this.loanFilterAmount = e.target.value;
@@ -1049,6 +1049,9 @@ class UI {
 
     // Show modal
     showModal(title, content, footer = '') {
+        // cleanup existing modals first
+        document.querySelectorAll('.modal-overlay').forEach(el => el.remove());
+
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
@@ -1147,7 +1150,7 @@ class UI {
     recordPaymentForLoan(loanId) {
         // Close current modal
         this.closeModal();
-        
+
         // Show payment form with pre-selected loan
         setTimeout(() => {
             app.showAddPaymentForm(loanId);
@@ -1160,14 +1163,14 @@ class UI {
     async loadAnalytics() {
         try {
             this.showLoading('analytics-content');
-            
+
             // Get fresh data
             const loans = await sheetsManager.getLoans();
             const payments = await sheetsManager.getPayments();
-            
+
             // Initialize analytics
             analyticsManager.init(loans, payments);
-            
+
             // Render analytics dashboard
             this.renderAnalytics();
         } catch (error) {
@@ -1335,9 +1338,9 @@ class UI {
     // Render status bars
     renderStatusBars(statusDistribution) {
         return statusDistribution.map(status => {
-            const color = status.label === 'Active' ? '#4CAF50' : 
-                         status.label === 'Closed' ? '#2196F3' : '#f44336';
-            
+            const color = status.label === 'Active' ? '#4CAF50' :
+                status.label === 'Closed' ? '#2196F3' : '#f44336';
+
             return `
                 <div class="status-bar">
                     <div class="status-info">

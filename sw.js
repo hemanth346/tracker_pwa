@@ -71,7 +71,10 @@ self.addEventListener('fetch', (event) => {
 
                         caches.open(CACHE_NAME)
                             .then((cache) => {
-                                cache.put(request, responseToCache);
+                                // Only cache http/https requests, not chrome-extension or other schemes
+                                if (request.url.startsWith('http://') || request.url.startsWith('https://')) {
+                                    cache.put(request, responseToCache);
+                                }
                             });
 
                         return response;

@@ -77,6 +77,7 @@ class Auth {
 
         // Clear session
         localStorage.removeItem('user');
+        localStorage.removeItem('accessToken');
         localStorage.removeItem('tokenExpiry');
 
         // Trigger sign out event
@@ -86,20 +87,24 @@ class Auth {
     // Check for existing session
     checkExistingSession() {
         const savedUser = localStorage.getItem('user');
+        const savedToken = localStorage.getItem('accessToken');
         const tokenExpiry = localStorage.getItem('tokenExpiry');
 
-        if (savedUser && tokenExpiry) {
+        if (savedUser && savedToken && tokenExpiry) {
             const expiryTime = parseInt(tokenExpiry);
-            if (Date.now() < expiryTime) {
+            // Check if token expires within next 15 minutes, refresh if so
+            if (Date.now() < (expiryTime - 900000)) {
                 this.user = JSON.parse(savedUser);
-                // Token might still be valid, try to use it
-                // In production, you'd want to refresh the token
+                this.accessToken = savedToken;
+                console.log('[Auth] Restored session from localStorage');
                 window.dispatchEvent(new CustomEvent('auth:success', { detail: this.user }));
+                return true;
             } else {
-                // Token expired, clear session
+                console.log('[Auth] Token expired or expiring soon, clearing session');
                 this.signOut();
             }
         }
+        return false;
     }
 
     // Handle successful authentication
@@ -128,6 +133,7 @@ class Auth {
 
             // Save to session (token expires in 1 hour)
             localStorage.setItem('user', JSON.stringify(this.user));
+            localStorage.setItem('accessToken', this.accessToken);
             localStorage.setItem('tokenExpiry', (Date.now() + 3600000).toString());
 
             // Trigger success event

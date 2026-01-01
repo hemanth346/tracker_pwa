@@ -134,6 +134,22 @@ class SheetsManager {
     // Format headers
     async formatHeaders() {
         try {
+            // First, get the spreadsheet to check sheet IDs
+            const spreadsheet = await gapi.client.sheets.spreadsheets.get({
+                spreadsheetId: this.spreadsheetId
+            });
+
+            const sheets = spreadsheet.result.sheets;
+            console.log('Available sheets:', sheets.map(s => ({ title: s.properties.title, sheetId: s.properties.sheetId })));
+
+            const loansSheet = sheets.find(s => s.properties.title === 'Loans');
+            const paymentsSheet = sheets.find(s => s.properties.title === 'Interest Payments');
+
+            if (!loansSheet || !paymentsSheet) {
+                console.error('Required sheets not found:', { loansSheet: !!loansSheet, paymentsSheet: !!paymentsSheet });
+                return;
+            }
+
             await gapi.client.sheets.spreadsheets.batchUpdate({
                 spreadsheetId: this.spreadsheetId,
                 resource: {
@@ -141,7 +157,7 @@ class SheetsManager {
                         {
                             repeatCell: {
                                 range: {
-                                    sheetId: 0, // Loans sheet
+                                    sheetId: loansSheet.properties.sheetId, // Use actual sheet ID
                                     startRowIndex: 0,
                                     endRowIndex: 1,
                                 },
@@ -160,7 +176,7 @@ class SheetsManager {
                         {
                             repeatCell: {
                                 range: {
-                                    sheetId: 1, // Interest Payments sheet
+                                    sheetId: paymentsSheet.properties.sheetId, // Use actual sheet ID
                                     startRowIndex: 0,
                                     endRowIndex: 1,
                                 },

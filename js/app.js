@@ -217,28 +217,56 @@ class App {
       return;
     }
 
-    // Check form validity and provide specific feedback
-    if (!form.checkValidity()) {
-      // Find specific invalid fields for debugging
-      const invalidFields = form.querySelectorAll(':invalid');
-      console.log('Invalid fields:', Array.from(invalidFields).map(f => ({ name: f.name, value: f.value, validationMessage: f.validationMessage })));
-      
-      ui.showToast('Please fill in all required fields', 'error');
-      form.reportValidity();
+    // Improved value extraction
+    const getFormValue = (fieldName) => {
+      // Look for the element specifically in the last modal to avoid duplicates
+      const modal = document.querySelector('.modal-overlay:last-child');
+      const container = modal || document;
+      const field = container.querySelector(`[name="${fieldName}"]`);
+
+      if (!field) return '';
+      return field.value.trim();
+    };
+
+    // Extract all form values directly
+    const formData = {
+      dateGiven: getFormValue('dateGiven'),
+      name: getFormValue('name'),
+      amount: getFormValue('amount'),
+      interestRate: getFormValue('interestRate'),
+      details: getFormValue('details'),
+      via: getFormValue('via'),
+      hasProNote: getFormValue('hasProNote')
+    };
+
+    // console.log('EMERGENCY DEBUG - Extracted values:', formData);
+
+    // Validate required fields
+    const requiredFields = ['dateGiven', 'name', 'amount', 'interestRate'];
+    const missingFields = [];
+
+    requiredFields.forEach(fieldName => {
+      if (!formData[fieldName]) {
+        missingFields.push(fieldName);
+        console.log(`MISSING: ${fieldName} = "${formData[fieldName]}"`);
+      }
+    });
+
+    if (missingFields.length > 0) {
+      console.error('VALIDATION FAILED - Missing fields:', missingFields);
+      ui.showToast(`Please fill: ${missingFields.join(', ')}`, 'error');
       return;
     }
 
     const submitBtn = document.querySelector('.modal-footer .btn-primary');
     ui.showBtnLoading(submitBtn);
 
-    const formData = new FormData(form);
-
     // Collect contacts
     const contacts = [];
     document.querySelectorAll('.contact-entry').forEach(entry => {
-      const name = entry.querySelector('[data-contact="name"]').value;
-      const relation = entry.querySelector('[data-contact="relation"]').value;
-      const phone = entry.querySelector('[data-contact="phone"]').value;
+      const name = entry.querySelector('[data-contact="name"]').value.trim();
+      const relation = entry.querySelector('[data-contact="relation"]').value.trim();
+      const phone = entry.querySelector('[data-contact="phone"]').value.trim();
 
       if (name || relation || phone) {
         contacts.push({ name, relation, phone });
@@ -253,7 +281,7 @@ class App {
         ui.showToast('Uploading attachments...', 'info');
         const uploadedImages = await driveManager.uploadMultipleImages(
           Array.from(fileInput.files),
-          `loan_${formData.get('name')}`
+          `loan_${formData.name}`
         );
         attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
       } catch (error) {
@@ -264,17 +292,20 @@ class App {
     }
 
     const loanData = {
-      dateGiven: formData.get('dateGiven'),
-      name: formData.get('name'),
-      amount: parseFloat(formData.get('amount')),
-      interestRate: parseFloat(formData.get('interestRate')),
-      details: formData.get('details'),
-      via: formData.get('via'),
-      hasProNote: formData.get('hasProNote') === 'true',
+      dateGiven: formData.dateGiven,
+      name: formData.name,
+      amount: parseFloat(formData.amount) || 0,
+      interestRate: parseFloat(formData.interestRate) || 0,
+      details: formData.details,
+      via: formData.via,
+      hasProNote: formData.hasProNote === 'true',
       status: 'Active',
       contacts: contacts,
       attachments: attachments
     };
+
+    // Debug: Log the final loan data before submission
+    // console.log('Loan data to submit:', loanData);
 
     try {
       await sheetsManager.addLoan(loanData);
@@ -283,7 +314,8 @@ class App {
       ui.loadLoans();
     } catch (error) {
       console.error('Error adding loan:', error);
-      ui.showToast('Error adding loan', 'error');
+      ui.showToast('Error adding loan. Please try again.', 'error');
+    } finally {
       ui.hideBtnLoading(submitBtn);
     }
   }
@@ -411,10 +443,10 @@ class App {
     try {
       const loans = await sheetsManager.getLoans();
       const activeLoans = loans.filter(loan => loan.status === 'Active');
-      
+
       const loanSelector = document.getElementById('loan-selector');
       const borrowerNameInput = document.querySelector('input[name="borrowerName"]');
-      
+
       if (loanSelector) {
         // Clear existing options except the first one
         if (activeLoans.length === 0) {
@@ -425,9 +457,9 @@ class App {
           }
           return;
         }
-        
+
         loanSelector.innerHTML = '<option value="">Choose a loan...</option>';
-        
+
         // Add active loans as options
         activeLoans.forEach(loan => {
           const option = document.createElement('option');
@@ -438,7 +470,7 @@ class App {
           }
           loanSelector.appendChild(option);
         });
-        
+
         // Add event listener to populate borrower name when loan is selected (remove existing first)
         const existingListener = loanSelector.getAttribute('data-listener-added');
         if (!existingListener) {
@@ -452,7 +484,7 @@ class App {
           });
           loanSelector.setAttribute('data-listener-added', 'true');
         }
-        
+
         // If a loan is pre-selected, populate the borrower name
         if (selectedLoanId) {
           const selectedLoan = activeLoans.find(loan => loan.loanId === selectedLoanId);
@@ -485,13 +517,13 @@ class App {
   async submitPaymentForm() {
     const form = document.getElementById('add-payment-form');
     const loanId = form?.querySelector('[name="loanId"]')?.value;
-    
+
     if (!form || !form.checkValidity()) {
       ui.showToast('Please fill in all required fields', 'error');
       form.reportValidity();
       return;
     }
-    
+
     // Additional validation for loan selection
     if (!loanId) {
       ui.showToast('Please select a loan', 'error');
