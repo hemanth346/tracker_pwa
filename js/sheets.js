@@ -313,14 +313,14 @@ class SheetsManager {
             return loans;
         } catch (error) {
             console.error('Error getting loans:', error);
-            
+
             // Try to return cached data even if expired in case of network error
             const fallbackLoans = cacheManager.get('loans');
             if (fallbackLoans) {
                 console.log('Returning cached loans due to API error');
                 return fallbackLoans;
             }
-            
+
             throw error;
         }
     }
@@ -381,6 +381,11 @@ class SheetsManager {
             // Update loan calculated fields
             await this.updateLoanCalculatedFields(paymentData.loanId);
 
+            // Invalidate caches to ensure UI shows fresh data
+            cacheManager.remove('payments');
+            cacheManager.remove('loans');
+            console.log('Caches invalidated after adding payment');
+
             return true;
         } catch (error) {
             console.error('Error adding payment:', error);
@@ -426,14 +431,14 @@ class SheetsManager {
             return payments;
         } catch (error) {
             console.error('Error getting payments:', error);
-            
+
             // Try to return cached data even if expired in case of network error
             const fallbackPayments = cacheManager.get('payments');
             if (fallbackPayments) {
                 console.log('Returning cached payments due to API error');
                 return fallbackPayments;
             }
-            
+
             throw error;
         }
     }
@@ -441,6 +446,10 @@ class SheetsManager {
     // Update loan calculated fields
     async updateLoanCalculatedFields(loanId) {
         try {
+            // Force fetch without cache to get latest rows
+            cacheManager.remove('loans');
+            cacheManager.remove('payments');
+
             const loans = await this.getLoans();
             const payments = await this.getPayments();
 

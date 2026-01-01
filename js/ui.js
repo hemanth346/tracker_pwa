@@ -499,56 +499,63 @@ class UI {
 
     // ====== LOAN GROUPING AND FILTERING METHODS ======
 
-    // Render loan filter controls with search
+    // Render loan filter controls with search (Compact Version)
     renderLoanFilters() {
         return `
-            <div class="loan-filters" style="margin-bottom: 1rem; padding: 1rem; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
-                <!-- Search Bar -->
-                <div style="margin-bottom: 1rem;">
-                    <div class="flex items-center gap-sm">
-                        <input type="text" id="loan-search-input" class="form-input" placeholder="Search loans by name, ID, or details..." style="flex: 1;">
-                        <button id="clear-loan-search" class="btn btn-outline btn-sm" title="Clear search">✕</button>
+            <div class="loan-filters-compact" style="margin-bottom: 1.5rem;">
+                <div class="filter-main-bar" style="display: flex; gap: 0.5rem; align-items: center; background: var(--surface); padding: 0.5rem; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="flex: 1; position: relative;">
+                        <span style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); opacity: 0.5;">🔍</span>
+                        <input type="text" id="loan-search-input" class="form-input" placeholder="Search loans..." style="width: 100%; border: none; background: transparent; padding-left: 2.25rem;">
                     </div>
+                    <button id="toggle-advanced-filters" class="btn btn-secondary btn-sm" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
+                        <span style="margin-right: 0.25rem;">⚙️</span> Filters
+                    </button>
+                    <button id="clear-loan-search" class="btn btn-outline btn-sm" style="border: none; opacity: 0.7;">✕</button>
                 </div>
                 
-                <!-- Filter Controls -->
-                <div class="grid grid-4" style="gap: 1rem;">
-                    <div>
-                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Group By:</label>
-                        <select id="loan-group-by-select" class="form-select" style="width: 100%;">
-                            <option value="borrower" ${(this.loanGroupBy === 'borrower' || !this.loanGroupBy) ? 'selected' : ''}>Borrower</option>
-                            <option value="month" ${this.loanGroupBy === 'month' ? 'selected' : ''}>Month</option>
-                            <option value="via" ${this.loanGroupBy === 'via' ? 'selected' : ''}>Via/Referrer</option>
-                            <option value="status" ${this.loanGroupBy === 'status' ? 'selected' : ''}>Status</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Filter by Status:</label>
-                        <select id="loan-filter-status-select" class="form-select" style="width: 100%;">
-                            <option value="all" ${(this.loanFilterStatus === 'all' || !this.loanFilterStatus) ? 'selected' : ''}>All Loans</option>
-                            <option value="Active" ${this.loanFilterStatus === 'Active' ? 'selected' : ''}>Active Only</option>
-                            <option value="Closed" ${this.loanFilterStatus === 'Closed' ? 'selected' : ''}>Closed Only</option>
-                            <option value="Defaulted" ${this.loanFilterStatus === 'Defaulted' ? 'selected' : ''}>Defaulted Only</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Filter by Amount:</label>
-                        <select id="loan-filter-amount-select" class="form-select" style="width: 100%;">
-                            <option value="all" ${(this.loanFilterAmount === 'all' || !this.loanFilterAmount) ? 'selected' : ''}>All Amounts</option>
-                            <option value="small" ${this.loanFilterAmount === 'small' ? 'selected' : ''}>< ₹50,000</option>
-                            <option value="medium" ${this.loanFilterAmount === 'medium' ? 'selected' : ''}>₹50,000 - ₹2,00,000</option>
-                            <option value="large" ${this.loanFilterAmount === 'large' ? 'selected' : ''}>&#62; ₹2,00,000</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label" style="margin-bottom: 0.5rem; display: block;">Date Range:</label>
-                        <input type="date" id="loan-date-filter" class="form-input" style="width: 100%;" title="Filter by date given">
+                <div id="advanced-filters-panel" class="hidden" style="margin-top: 0.75rem; padding: 1rem; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); animation: slideDown 0.2s ease-out;">
+                    <div class="grid grid-4" style="gap: 1rem;">
+                        <div>
+                            <label class="form-label-xs">Group By</label>
+                            <select id="loan-group-by-select" class="form-select select-sm">
+                                <option value="borrower" ${(this.loanGroupBy === 'borrower' || !this.loanGroupBy) ? 'selected' : ''}>Borrower</option>
+                                <option value="month" ${this.loanGroupBy === 'month' ? 'selected' : ''}>Month</option>
+                                <option value="via" ${this.loanGroupBy === 'via' ? 'selected' : ''}>Via/Referrer</option>
+                                <option value="status" ${this.loanGroupBy === 'status' ? 'selected' : ''}>Status</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label-xs">Status</label>
+                            <select id="loan-filter-status-select" class="form-select select-sm">
+                                <option value="all" ${(this.loanFilterStatus === 'all' || !this.loanFilterStatus) ? 'selected' : ''}>All</option>
+                                <option value="Active" ${this.loanFilterStatus === 'Active' ? 'selected' : ''}>Active</option>
+                                <option value="Closed" ${this.loanFilterStatus === 'Closed' ? 'selected' : ''}>Closed</option>
+                                <option value="Defaulted" ${this.loanFilterStatus === 'Defaulted' ? 'selected' : ''}>Defaulted</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label-xs">Amount</label>
+                            <select id="loan-filter-amount-select" class="form-select select-sm">
+                                <option value="all" ${(this.loanFilterAmount === 'all' || !this.loanFilterAmount) ? 'selected' : ''}>Any</option>
+                                <option value="small" ${this.loanFilterAmount === 'small' ? 'selected' : ''}>< 50k</option>
+                                <option value="medium" ${this.loanFilterAmount === 'medium' ? 'selected' : ''}>50k - 2L</option>
+                                <option value="large" ${this.loanFilterAmount === 'large' ? 'selected' : ''}>> 2L</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label-xs">Date Range</label>
+                            <input type="date" id="loan-date-filter" class="form-input input-sm">
+                        </div>
                     </div>
                 </div>
-                
-                <!-- Search Results Summary -->
-                <div id="loan-search-summary" style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-secondary);"></div>
+                <div id="loan-search-summary" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); text-align: right; padding-right: 0.5rem;"></div>
             </div>
+            <style>
+                .form-label-xs { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem; display: block; }
+                .select-sm, .input-sm { font-size: 0.875rem; padding: 0.35rem 0.5rem; border-radius: 6px; }
+                @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+            </style>
         `;
     }
 
@@ -796,6 +803,16 @@ class UI {
                 searchManager.debounce(() => {
                     this.renderLoans(this.allLoans);
                 }, searchManager.searchDebounceTime, 'loan-search');
+            });
+        }
+
+        // Toggle advanced filters
+        const toggleBtn = document.getElementById('toggle-advanced-filters');
+        const panel = document.getElementById('advanced-filters-panel');
+        if (toggleBtn && panel) {
+            toggleBtn.addEventListener('click', () => {
+                panel.classList.toggle('hidden');
+                toggleBtn.classList.toggle('active');
             });
         }
 

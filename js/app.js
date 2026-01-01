@@ -556,7 +556,7 @@ class App {
     const paymentData = {
       paymentDate: formData.get('paymentDate'),
       borrowerName: formData.get('borrowerName'),
-      loanReference: formData.get('loanId'), // Using actual loan ID
+      loanId: formData.get('loanId'), // Fixed: Using loanId to match sheetsManager
       amount: parseFloat(formData.get('amount')),
       paymentType: formData.get('paymentType'),
       paymentMethod: formData.get('paymentMethod'),
