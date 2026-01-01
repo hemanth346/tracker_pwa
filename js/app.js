@@ -277,19 +277,25 @@ class App {
     let attachments = '';
     const fileInput = document.getElementById('loan-attachments');
     if (fileInput && fileInput.files.length > 0) {
-      try {
-        ui.showToast('Uploading attachments...', 'info');
-        const uploadedImages = await driveManager.uploadMultipleImages(
-          Array.from(fileInput.files),
-          `loan_${formData.name}`
-        );
-        attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
-      } catch (error) {
-        ui.showToast('Error uploading attachments', 'error');
-        ui.hideBtnLoading(submitBtn);
-        return;
+      const isOnline = typeof offlineManager !== 'undefined' && offlineManager.isOnline;
+      if (isOnline) {
+        try {
+          ui.showToast('Uploading attachments...', 'info');
+          const uploadedImages = await driveManager.uploadMultipleImages(
+            Array.from(fileInput.files),
+            `loan_${formData.name}`
+          );
+          attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
+        } catch (error) {
+          ui.showToast('Error uploading attachments', 'error');
+          ui.hideBtnLoading(submitBtn);
+          return;
+        }
+      } else {
+        ui.showToast('Attachments cannot be uploaded while offline. Skipping...', 'warning');
       }
     }
+
 
     const loanData = {
       dateGiven: formData.dateGiven,
@@ -309,7 +315,14 @@ class App {
 
     try {
       await sheetsManager.addLoan(loanData);
-      ui.showToast('Loan added successfully!', 'success');
+      const isOnline = typeof offlineManager !== 'undefined' && offlineManager.isOnline;
+
+      if (!isOnline) {
+        ui.showToast('Loan saved locally. Will sync when online.', 'info');
+      } else {
+        ui.showToast('Loan added successfully!', 'success');
+      }
+
       document.querySelector('.modal-overlay').remove();
       ui.loadLoans();
     } catch (error) {
@@ -318,6 +331,7 @@ class App {
     } finally {
       ui.hideBtnLoading(submitBtn);
     }
+
   }
 
   // Show add payment form with loan selection
@@ -539,19 +553,25 @@ class App {
     let attachments = '';
     const fileInput = document.getElementById('payment-attachments');
     if (fileInput && fileInput.files.length > 0) {
-      try {
-        ui.showToast('Uploading attachments...', 'info');
-        const uploadedImages = await driveManager.uploadMultipleImages(
-          Array.from(fileInput.files),
-          `payment_${formData.get('borrowerName')}`
-        );
-        attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
-      } catch (error) {
-        ui.showToast('Error uploading attachments', 'error');
-        ui.hideBtnLoading(submitBtn);
-        return;
+      const isOnline = typeof offlineManager !== 'undefined' && offlineManager.isOnline;
+      if (isOnline) {
+        try {
+          ui.showToast('Uploading attachments...', 'info');
+          const uploadedImages = await driveManager.uploadMultipleImages(
+            Array.from(fileInput.files),
+            `payment_${formData.get('borrowerName')}`
+          );
+          attachments = driveManager.formatImageLinks(uploadedImages.map(img => img.link));
+        } catch (error) {
+          ui.showToast('Error uploading attachments', 'error');
+          ui.hideBtnLoading(submitBtn);
+          return;
+        }
+      } else {
+        ui.showToast('Attachments cannot be uploaded while offline. Skipping...', 'warning');
       }
     }
+
 
     const paymentData = {
       paymentDate: formData.get('paymentDate'),
@@ -567,7 +587,14 @@ class App {
 
     try {
       await sheetsManager.addPayment(paymentData);
-      ui.showToast('Payment recorded successfully!', 'success');
+      const isOnline = typeof offlineManager !== 'undefined' && offlineManager.isOnline;
+
+      if (!isOnline) {
+        ui.showToast('Payment saved locally. Will sync when online.', 'info');
+      } else {
+        ui.showToast('Payment recorded successfully!', 'success');
+      }
+
       document.querySelector('.modal-overlay').remove();
 
       // Refresh both views
@@ -581,6 +608,7 @@ class App {
       ui.showToast('Error recording payment', 'error');
       ui.hideBtnLoading(submitBtn);
     }
+
   }
 
   // Submit edit loan form
@@ -628,7 +656,14 @@ class App {
 
     try {
       await sheetsManager.updateLoan(rowIndex, loanData);
-      ui.showToast('Loan updated successfully!', 'success');
+      const isOnline = typeof offlineManager !== 'undefined' && offlineManager.isOnline;
+
+      if (!isOnline) {
+        ui.showToast('Update saved locally. Will sync when online.', 'info');
+      } else {
+        ui.showToast('Loan updated successfully!', 'success');
+      }
+
       document.querySelector('.modal-overlay').remove();
       ui.loadLoans();
       // Also refresh dropdowns as names might have changed
@@ -638,6 +673,7 @@ class App {
       ui.showToast('Error updating loan', 'error');
       ui.hideBtnLoading(submitBtn);
     }
+
   }
 }
 

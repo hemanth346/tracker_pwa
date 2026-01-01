@@ -223,6 +223,31 @@ class SheetsManager {
 
     // Add loan
     async addLoan(loanData) {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log('App is offline, queuing loan addition');
+
+            // Generate a temporary ID if not present
+            const tempId = loanData.loanId || `TEMP-LOAN-${Date.now()}`;
+            const offlineLoan = { ...loanData, loanId: tempId };
+
+            offlineManager.queueOperation({
+                type: 'add_loan',
+                data: offlineLoan
+            });
+
+            // Optimistically update cache instead of just removing it
+            const cachedLoans = cacheManager.get('loans') || [];
+            cachedLoans.unshift({
+                ...offlineLoan,
+                rowIndex: -1, // Temporary index
+                status: 'Active'
+            });
+            cacheManager.set('loans', cachedLoans);
+
+            return tempId;
+        }
+
         try {
             // Generate Loan ID: LOAN-YYYYMMDD-XXX
             const loans = await this.getLoans();
@@ -269,8 +294,15 @@ class SheetsManager {
         }
     }
 
+
     // Get all loans (with caching)
     async getLoans() {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log('App is offline, returning cached loans');
+            return cacheManager.get('loans') || [];
+        }
+
         try {
             // Check cache first
             const cacheKey = 'loans';
@@ -327,6 +359,31 @@ class SheetsManager {
 
     // Get distinct values from a column
     async getDistinctValues(sheetName, columnIndex) {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log(`App is offline, getting distinct values from cache for ${sheetName}`);
+            let data = [];
+            if (sheetName === 'Loans') {
+                data = cacheManager.get('loans') || [];
+            } else if (sheetName === 'Interest Payments') {
+                data = cacheManager.get('payments') || [];
+            }
+
+            if (data.length > 0) {
+                let values = [];
+                if (sheetName === 'Loans') {
+                    // Column mapping for Loans: 2: name, 6: via
+                    if (columnIndex === 2) values = data.map(l => l.name);
+                    else if (columnIndex === 6) values = data.map(l => l.via);
+                } else if (sheetName === 'Interest Payments') {
+                    // Column mapping for Payments: 6: receivedBy
+                    if (columnIndex === 6) values = data.map(p => p.receivedBy);
+                }
+                return [...new Set(values.filter(v => v))].sort();
+            }
+            return [];
+        }
+
         try {
             const range = `${sheetName}!${this.getColumnLetter(columnIndex)}2:${this.getColumnLetter(columnIndex)}`;
             const response = await gapi.client.sheets.spreadsheets.values.get({
@@ -343,6 +400,7 @@ class SheetsManager {
         }
     }
 
+
     // Helper: Get column letter from index (0-based)
     getColumnLetter(index) {
         let temp, letter = '';
@@ -356,6 +414,26 @@ class SheetsManager {
 
     // Add interest payment
     async addPayment(paymentData) {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log('App is offline, queuing payment addition');
+
+            offlineManager.queueOperation({
+                type: 'add_payment',
+                data: paymentData
+            });
+
+            // Optimistically update cache
+            const cachedPayments = cacheManager.get('payments') || [];
+            cachedPayments.unshift({
+                ...paymentData,
+                rowIndex: -1
+            });
+            cacheManager.set('payments', cachedPayments);
+
+            return true;
+        }
+
         try {
             const row = [
                 paymentData.paymentDate,
@@ -393,8 +471,15 @@ class SheetsManager {
         }
     }
 
+
     // Get all payments (with caching)
     async getPayments() {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log('App is offline, returning cached payments');
+            return cacheManager.get('payments') || [];
+        }
+
         try {
             // Check cache first
             const cacheKey = 'payments';
@@ -495,6 +580,30 @@ class SheetsManager {
 
     // Update loan
     async updateLoan(rowIndex, loanData) {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log('App is offline, queuing loan update');
+
+            offlineManager.queueOperation({
+                type: 'update_loan',
+                originalId: rowIndex, // Using rowIndex as the originalId for updates
+                data: loanData
+            });
+
+            // Optimistically update cache
+            let cachedLoans = cacheManager.get('loans') || [];
+            const index = cachedLoans.findIndex(l => l.rowIndex === rowIndex || l.loanId === loanData.loanId);
+            if (index !== -1) {
+                cachedLoans[index] = { ...cachedLoans[index], ...loanData };
+            } else {
+                cachedLoans.push({ ...loanData, rowIndex });
+            }
+            cacheManager.set('loans', cachedLoans);
+
+            return true;
+        }
+
+
         try {
             const row = [
                 loanData.loanId,
@@ -537,6 +646,69 @@ class SheetsManager {
             throw error;
         }
     }
+
+    // Update interest payment
+    async updatePayment(rowIndex, paymentData) {
+        // Handle offline mode
+        if (typeof offlineManager !== 'undefined' && !offlineManager.isOnline) {
+            console.log('App is offline, queuing payment update');
+
+            offlineManager.queueOperation({
+                type: 'update_payment',
+                originalId: rowIndex,
+                data: paymentData
+            });
+
+            // Optimistically update cache
+            let cachedPayments = cacheManager.get('payments') || [];
+            const index = cachedPayments.findIndex(p => p.rowIndex === rowIndex);
+            if (index !== -1) {
+                cachedPayments[index] = { ...cachedPayments[index], ...paymentData };
+            } else {
+                cachedPayments.push({ ...paymentData, rowIndex });
+            }
+            cacheManager.set('payments', cachedPayments);
+
+            return true;
+        }
+
+
+        try {
+            const row = [
+                paymentData.paymentDate,
+                paymentData.loanId,
+                paymentData.borrowerName,
+                paymentData.amount,
+                paymentData.paymentType,
+                paymentData.paymentMethod,
+                paymentData.receivedBy || 'Self',
+                paymentData.attachments || '',
+                paymentData.notes || ''
+            ];
+
+            await gapi.client.sheets.spreadsheets.values.update({
+                spreadsheetId: this.spreadsheetId,
+                range: `Interest Payments!A${rowIndex}:I${rowIndex}`,
+                valueInputOption: 'USER_ENTERED',
+                resource: {
+                    values: [row],
+                },
+            });
+
+            // Update loan calculated fields
+            await this.updateLoanCalculatedFields(paymentData.loanId);
+
+            // Invalidate caches
+            cacheManager.remove('payments');
+            cacheManager.remove('loans');
+
+            return true;
+        } catch (error) {
+            console.error('Error updating payment:', error);
+            throw error;
+        }
+    }
+
 
     // Helper to parse JSON safely
     parseJSON(str) {
