@@ -523,6 +523,14 @@ class SheetsManager {
                 },
             });
 
+            // Invalidate cache after successful update
+            cacheManager.remove('loans');
+
+            // Trigger recalculation to ensure metrics are fresh
+            await this.updateLoanCalculatedFields(loanData.loanId);
+
+            console.log('Loans cache invalidated and recalculated after updating loan');
+
             return true;
         } catch (error) {
             console.error('Error updating loan:', error);

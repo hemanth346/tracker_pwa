@@ -38,20 +38,21 @@ class SearchManager {
             // Text search across multiple fields
             if (query) {
                 const searchText = query.toLowerCase();
-                const searchableText = `
-                    ${loan.loanId || ''} 
-                    ${loan.name || ''} 
-                    ${loan.details || ''} 
-                    ${loan.via || ''}
-                `.toLowerCase();
+                const searchableText = [
+                    loan.loanId,
+                    loan.name,
+                    loan.details,
+                    loan.via,
+                    loan.amount ? loan.amount.toString() : ''
+                ].filter(Boolean).join(' ').toLowerCase();
 
                 if (!searchableText.includes(searchText)) {
                     return false;
                 }
             }
 
-            // Status filter
-            if (status !== 'all' && loan.status !== status) {
+            // Status filter (ignore if empty or 'all')
+            if (status && status !== 'all' && loan.status !== status) {
                 return false;
             }
 
@@ -71,13 +72,13 @@ class SearchManager {
                 return false;
             }
 
-            // Via filter
-            if (via && loan.via !== via) {
+            // Via filter (ignore if empty or 'all')
+            if (via && via !== 'all' && loan.via !== via) {
                 return false;
             }
 
             // Borrower name filter
-            if (borrowerName && !loan.name.toLowerCase().includes(borrowerName.toLowerCase())) {
+            if (borrowerName && (!loan.name || !loan.name.toLowerCase().includes(borrowerName.toLowerCase()))) {
                 return false;
             }
 

@@ -92,8 +92,8 @@ class Auth {
 
         if (savedUser && savedToken && tokenExpiry) {
             const expiryTime = parseInt(tokenExpiry);
-            // Check if token expires within next 30 minutes, refresh if so
-            if (Date.now() < (expiryTime - 1800000)) {
+            // Check if token expires within next 15 minutes, refresh if so
+            if (Date.now() < (expiryTime - 900000)) {
                 this.user = JSON.parse(savedUser);
                 this.accessToken = savedToken;
                 console.log('[Auth] Restored session from localStorage');

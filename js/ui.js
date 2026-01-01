@@ -168,16 +168,27 @@ class UI {
             return;
         }
 
-        // Add filter controls only if not appending
-        const filterHtml = append ? '' : this.renderLoanFilters();
+        // Ensure results container exists
+        let resultsContainer = container.querySelector('#loan-results-container');
+        let filterBar = container.querySelector('.loan-filters-compact');
+
+        if (!append) {
+            // If filters don't exist, render them and the results container
+            if (!filterBar) {
+                container.innerHTML = this.renderLoanFilters() + '<div id="loan-results-container"></div>';
+                resultsContainer = container.querySelector('#loan-results-container');
+            }
+
+            // Clear results container for a fresh non-append render
+            if (resultsContainer) resultsContainer.innerHTML = '';
+        }
 
         // Get current filter settings
         const groupBy = this.loanGroupBy || 'borrower';
         const statusFilter = this.loanFilterStatus || 'all';
-        const amountFilter = this.loanFilterAmount || 'all';
 
         // Filter loans based on criteria
-        const filteredLoans = this.filterLoansByType(this.allLoans, statusFilter, amountFilter);
+        const filteredLoans = this.filterLoansByType(this.allLoans, statusFilter);
 
         // Apply pagination to filtered loans
         const startIndex = (this.loansPage - 1) * this.itemsPerPage;
@@ -200,12 +211,17 @@ class UI {
             </div>
         ` : '';
 
-        if (append) {
-            // Find the existing content and replace just the groups
-            const existingFilterHtml = container.querySelector('.loan-filters')?.outerHTML || '';
-            container.innerHTML = existingFilterHtml + groupsHtml + loadMoreHtml;
-        } else {
-            container.innerHTML = filterHtml + groupsHtml + loadMoreHtml;
+        if (resultsContainer) {
+            if (append) {
+                // If appending, we need to remove old load-more button if it exists
+                const oldLoadMore = resultsContainer.querySelector('.text-center:last-child');
+                if (oldLoadMore && oldLoadMore.querySelector('#load-more-loans')) {
+                    oldLoadMore.remove();
+                }
+                resultsContainer.insertAdjacentHTML('beforeend', groupsHtml + loadMoreHtml);
+            } else {
+                resultsContainer.innerHTML = groupsHtml + loadMoreHtml;
+            }
         }
 
         // Add event listener for load more button
@@ -518,7 +534,7 @@ class UI {
                 </div>
                 
                 <div id="advanced-filters-panel" class="hidden" style="margin-top: 0.75rem; padding: 1rem; background: var(--surface); border-radius: 12px; border: 1px solid var(--border); animation: slideDown 0.2s ease-out;">
-                    <div class="grid grid-4" style="gap: 1rem;">
+                    <div class="grid grid-2" style="gap: 1rem;">
                         <div>
                             <label class="form-label-xs">Group By</label>
                             <select id="loan-group-by-select" class="form-select select-sm">
@@ -537,19 +553,6 @@ class UI {
                                 <option value="Defaulted" ${this.loanFilterStatus === 'Defaulted' ? 'selected' : ''}>Defaulted</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="form-label-xs">Amount</label>
-                            <select id="loan-filter-amount-select" class="form-select select-sm">
-                                <option value="all" ${(this.loanFilterAmount === 'all' || !this.loanFilterAmount) ? 'selected' : ''}>Any</option>
-                                <option value="small" ${this.loanFilterAmount === 'small' ? 'selected' : ''}>< 50k</option>
-                                <option value="medium" ${this.loanFilterAmount === 'medium' ? 'selected' : ''}>50k - 2L</option>
-                                <option value="large" ${this.loanFilterAmount === 'large' ? 'selected' : ''}>> 2L</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="form-label-xs">Date Range</label>
-                            <input type="date" id="loan-date-filter" class="form-input input-sm">
-                        </div>
                     </div>
                 </div>
                 <div id="loan-search-summary" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-secondary); text-align: right; padding-right: 0.5rem;"></div>
@@ -562,37 +565,22 @@ class UI {
         `;
     }
 
-    // Filter loans by status, amount, and search criteria
-    filterLoansByType(loans, statusFilter, amountFilter) {
+    // Filter loans by status and search criteria
+    filterLoansByType(loans, statusFilter) {
         // Get search criteria from inputs
         const searchInput = document.getElementById('loan-search-input');
-        const dateFilter = document.getElementById('loan-date-filter');
 
         const searchCriteria = {
             query: searchInput ? searchInput.value : '',
-            status: statusFilter !== 'all' ? statusFilter : '',
-            dateFrom: dateFilter ? dateFilter.value : ''
+            status: statusFilter !== 'all' ? statusFilter : ''
         };
 
-        // Add amount filter to search criteria
+        // Filter loans based on criteria
         let filteredLoans = loans;
 
         // Use search manager for comprehensive filtering
-        if (searchCriteria.query || searchCriteria.status || searchCriteria.dateFrom) {
+        if (searchCriteria.query || searchCriteria.status) {
             filteredLoans = searchManager.searchLoans(loans, searchCriteria);
-        }
-
-        // Additional amount filter (legacy support)
-        if (amountFilter !== 'all') {
-            filteredLoans = filteredLoans.filter(loan => {
-                const amount = parseFloat(loan.amount) || 0;
-                switch (amountFilter) {
-                    case 'small': return amount < 50000;
-                    case 'medium': return amount >= 50000 && amount <= 200000;
-                    case 'large': return amount > 200000;
-                    default: return true;
-                }
-            });
         }
 
         // Update search summary
@@ -793,13 +781,6 @@ class UI {
             });
         }
 
-        if (filterAmountSelect) {
-            filterAmountSelect.addEventListener('change', (e) => {
-                this.loanFilterAmount = e.target.value;
-                this.loadLoans(); // Reload with new filter
-            });
-        }
-
         // Debounced search input
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {
@@ -826,17 +807,20 @@ class UI {
                 // Reset internal state
                 this.loanGroupBy = 'borrower';
                 this.loanFilterStatus = 'all';
-                this.loanFilterAmount = 'all';
                 this.loansPage = 1;
 
                 // Reset UI elements
                 if (searchInput) searchInput.value = '';
-                const dateFilter = document.getElementById('loan-date-filter');
-                if (dateFilter) dateFilter.value = '';
 
                 // Refresh view
                 this.loadLoans();
                 this.showToast('Filters reset', 'info');
+            });
+        }
+
+        if (dateFilter) {
+            dateFilter.addEventListener('change', () => {
+                this.renderLoans(this.allLoans);
             });
         }
 
@@ -982,6 +966,9 @@ class UI {
                 <input type="hidden" name="rowIndex" value="${loan.rowIndex}">
                 <input type="hidden" name="loanId" value="${loan.loanId}">
                 <input type="hidden" name="existingAttachments" value="${this.escapeHtml(loan.attachments || '')}">
+                <input type="hidden" name="lastPaymentDate" value="${loan.lastPaymentDate || ''}">
+                <input type="hidden" name="totalInterestPaid" value="${loan.totalInterestPaid || 0}">
+                <input type="hidden" name="paidTillMonth" value="${loan.paidTillMonth || ''}">
                 
                 <div class="form-group">
                     <label class="form-label">Status</label>

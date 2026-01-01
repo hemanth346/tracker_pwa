@@ -620,6 +620,9 @@ class App {
       status: formData.get('status'),
       dateOfClosure: formData.get('dateOfClosure'),
       contacts: contacts,
+      lastPaymentDate: formData.get('lastPaymentDate'),
+      totalInterestPaid: parseFloat(formData.get('totalInterestPaid')) || 0,
+      paidTillMonth: formData.get('paidTillMonth'),
       attachments: formData.get('existingAttachments') // For now, not editing attachments here
     };
 
