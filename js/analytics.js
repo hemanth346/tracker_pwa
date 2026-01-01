@@ -21,7 +21,9 @@ class AnalyticsManager {
 
         const totalAmountLent = this.loans.reduce((sum, loan) => sum + (parseFloat(loan.amount) || 0), 0);
         const activeAmount = activeLoans.reduce((sum, loan) => sum + (parseFloat(loan.amount) || 0), 0);
-        const totalInterestEarned = this.payments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+        const totalInterestEarned = this.payments
+            .filter(payment => payment.paymentType === 'Interest' || payment.paymentType === 'Both')
+            .reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
 
         // Calculate expected monthly income from active loans
         const expectedMonthlyIncome = activeLoans.reduce((sum, loan) => {
@@ -66,7 +68,7 @@ class AnalyticsManager {
         const loanPayments = this.payments
             .filter(payment => payment.loanId === loanId)
             .sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
-        
+
         return loanPayments.length > 0 ? loanPayments[0].paymentDate : null;
     }
 
@@ -88,11 +90,13 @@ class AnalyticsManager {
     // Get monthly interest earnings for bar chart
     getMonthlyInterestEarnings() {
         const monthlyData = {};
-        
+
         this.payments.forEach(payment => {
+            if (payment.paymentType !== 'Interest' && payment.paymentType !== 'Both') return;
+
             const date = new Date(payment.paymentDate);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            
+
             if (!monthlyData[monthKey]) {
                 monthlyData[monthKey] = 0;
             }
@@ -113,11 +117,11 @@ class AnalyticsManager {
     // Get lending trends over time for line chart
     getLendingTrends() {
         const monthlyData = {};
-        
+
         this.loans.forEach(loan => {
             const date = new Date(loan.dateGiven);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            
+
             if (!monthlyData[monthKey]) {
                 monthlyData[monthKey] = { count: 0, amount: 0 };
             }
@@ -140,7 +144,7 @@ class AnalyticsManager {
     // Get top borrowers by amount
     getTopBorrowers(limit = 5) {
         const borrowerData = {};
-        
+
         this.loans.forEach(loan => {
             const name = loan.name || 'Unknown';
             if (!borrowerData[name]) {
@@ -152,7 +156,7 @@ class AnalyticsManager {
                     totalInterestPaid: 0
                 };
             }
-            
+
             borrowerData[name].totalAmount += parseFloat(loan.amount) || 0;
             borrowerData[name].loanCount += 1;
             if (loan.status === 'Active') {
@@ -162,6 +166,8 @@ class AnalyticsManager {
 
         // Add interest payments data
         this.payments.forEach(payment => {
+            if (payment.paymentType !== 'Interest' && payment.paymentType !== 'Both') return;
+
             const name = payment.borrowerName || 'Unknown';
             if (borrowerData[name]) {
                 borrowerData[name].totalInterestPaid += parseFloat(payment.amount) || 0;
@@ -178,14 +184,14 @@ class AnalyticsManager {
     getPerformanceMetrics() {
         const activeLoans = this.loans.filter(loan => loan.status === 'Active');
         const closedLoans = this.loans.filter(loan => loan.status === 'Closed');
-        
+
         // Calculate average loan tenure for closed loans
-        const avgTenure = closedLoans.length > 0 ? 
+        const avgTenure = closedLoans.length > 0 ?
             closedLoans.reduce((sum, loan) => {
                 const start = new Date(loan.dateGiven);
                 const end = new Date(loan.dateOfClosure);
-                const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 + 
-                                 (end.getMonth() - start.getMonth());
+                const monthsDiff = (end.getFullYear() - start.getFullYear()) * 12 +
+                    (end.getMonth() - start.getMonth());
                 return sum + monthsDiff;
             }, 0) / closedLoans.length : 0;
 
@@ -195,14 +201,16 @@ class AnalyticsManager {
                 // For closed loans, calculate based on tenure
                 const start = new Date(loan.dateGiven);
                 const end = new Date(loan.dateOfClosure);
-                const months = (end.getFullYear() - start.getFullYear()) * 12 + 
-                              (end.getMonth() - start.getMonth());
+                const months = (end.getFullYear() - start.getFullYear()) * 12 +
+                    (end.getMonth() - start.getMonth());
                 return sum + (parseFloat(loan.amount) * parseFloat(loan.interestRate) / 100) * months;
             }
             return sum;
         }, 0);
 
-        const totalCollected = this.payments.reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
+        const totalCollected = this.payments
+            .filter(p => p.paymentType === 'Interest' || p.paymentType === 'Both')
+            .reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
         const collectionEfficiency = totalExpected > 0 ? (totalCollected / totalExpected * 100) : 0;
 
         return {
@@ -217,11 +225,11 @@ class AnalyticsManager {
     calculatePortfolioGrowthRate() {
         const currentYear = new Date().getFullYear();
         const lastYear = currentYear - 1;
-        
-        const currentYearLoans = this.loans.filter(loan => 
+
+        const currentYearLoans = this.loans.filter(loan =>
             new Date(loan.dateGiven).getFullYear() === currentYear
         );
-        const lastYearLoans = this.loans.filter(loan => 
+        const lastYearLoans = this.loans.filter(loan =>
             new Date(loan.dateGiven).getFullYear() === lastYear
         );
 

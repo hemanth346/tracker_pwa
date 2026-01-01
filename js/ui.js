@@ -511,6 +511,9 @@ class UI {
                     <button id="toggle-advanced-filters" class="btn btn-secondary btn-sm" style="padding: 0.5rem 0.75rem; border-radius: 8px;">
                         <span style="margin-right: 0.25rem;">⚙️</span> Filters
                     </button>
+                    <button id="reset-loan-filters" class="btn btn-outline btn-sm" style="padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem;">
+                        Reset
+                    </button>
                     <button id="clear-loan-search" class="btn btn-outline btn-sm" style="border: none; opacity: 0.7;">✕</button>
                 </div>
                 
@@ -813,6 +816,27 @@ class UI {
             toggleBtn.addEventListener('click', () => {
                 panel.classList.toggle('hidden');
                 toggleBtn.classList.toggle('active');
+            });
+        }
+
+        // Reset filters
+        const resetBtn = document.getElementById('reset-loan-filters');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                // Reset internal state
+                this.loanGroupBy = 'borrower';
+                this.loanFilterStatus = 'all';
+                this.loanFilterAmount = 'all';
+                this.loansPage = 1;
+
+                // Reset UI elements
+                if (searchInput) searchInput.value = '';
+                const dateFilter = document.getElementById('loan-date-filter');
+                if (dateFilter) dateFilter.value = '';
+
+                // Refresh view
+                this.loadLoans();
+                this.showToast('Filters reset', 'info');
             });
         }
 

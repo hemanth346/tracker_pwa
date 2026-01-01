@@ -129,7 +129,7 @@ class Auth {
             }
 
             this.user = await response.json();
-            console.log('[Auth] User info received:', this.user);
+            // console.log('[Auth] User info received:', this.user);
 
             // Save to session (token expires in 1 hour)
             localStorage.setItem('user', JSON.stringify(this.user));
