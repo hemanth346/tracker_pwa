@@ -13,7 +13,10 @@ class SheetsManager {
             script.onload = () => {
                 gapi.load('client', async () => {
                     await gapi.client.init({
-                        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                        discoveryDocs: [
+                            'https://sheets.googleapis.com/$discovery/rest?version=v4',
+                            'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                        ],
                     });
                     this.sheetsLoaded = true;
                     resolve();
@@ -206,19 +209,83 @@ class SheetsManager {
         const savedId = localStorage.getItem('spreadsheetId');
         if (savedId) {
             this.spreadsheetId = savedId;
-            // Verify it exists
+            // Verify it exists AND is not trashed
             try {
-                await gapi.client.sheets.spreadsheets.get({
-                    spreadsheetId: this.spreadsheetId,
+                const response = await gapi.client.drive.files.get({
+                    fileId: this.spreadsheetId,
+                    fields: 'id, name, trashed'
                 });
-                return this.spreadsheetId;
+
+                if (response.result.trashed) {
+                    console.log('[Sheets] Saved spreadsheet is in trash, searching for active one...');
+                } else {
+                    console.log('[Sheets] Found existing active spreadsheet:', this.spreadsheetId);
+                    return this.spreadsheetId;
+                }
             } catch (error) {
-                console.log('Saved spreadsheet not found, creating new one');
+                console.log('[Sheets] Saved spreadsheet not found or inaccessible, searching for it...');
             }
         }
 
-        // Create new spreadsheet
+        // Search for existing active spreadsheet by name in Drive, newest first
+        try {
+            console.log('[Sheets] Searching for active spreadsheet with name:', CONFIG.SPREADSHEET_NAME);
+            const response = await gapi.client.drive.files.list({
+                q: `name = '${CONFIG.SPREADSHEET_NAME}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`,
+                fields: 'files(id, name, modifiedTime)',
+                spaces: 'drive',
+                orderBy: 'modifiedTime desc'
+            });
+
+            const files = response.result?.files;
+            if (files && files.length > 0) {
+                this.spreadsheetId = files[0].id;
+                console.log('[Sheets] Found existing spreadsheet in Drive (most recent):', this.spreadsheetId);
+                localStorage.setItem('spreadsheetId', this.spreadsheetId);
+                return this.spreadsheetId;
+            }
+        } catch (error) {
+            console.error('[Sheets] Error searching for spreadsheet:', error);
+        }
+
+        // Create new spreadsheet if not found
+        console.log('[Sheets] No existing non-trashed spreadsheet found, creating new one...');
         return await this.createSpreadsheet();
+    }
+
+    // Manually link a spreadsheet by ID
+    async linkSpreadsheet(id) {
+        try {
+            const response = await gapi.client.drive.files.get({
+                fileId: id,
+                fields: 'id, name, trashed, mimeType'
+            });
+
+            if (response.result?.trashed) {
+                throw new Error('This spreadsheet is in the trash.');
+            }
+
+            if (response.result?.mimeType !== 'application/vnd.google-apps.spreadsheet') {
+                throw new Error('Selected file is not a Google Spreadsheet.');
+            }
+
+            this.spreadsheetId = id;
+            localStorage.setItem('spreadsheetId', this.spreadsheetId);
+
+            // Re-initialize headers just in case it's an empty sheet
+            // but first check if it's already structured
+            try {
+                await gapi.client.sheets.spreadsheets.get({ spreadsheetId: id });
+            } catch (e) {
+                console.log('[Sheets] New spreadsheet needs initialization');
+                await this.initializeHeaders();
+            }
+
+            return response.result;
+        } catch (error) {
+            console.error('[Sheets] Error linking spreadsheet:', error);
+            throw error;
+        }
     }
 
     // Add loan

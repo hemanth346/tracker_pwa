@@ -134,27 +134,48 @@
         <div id="settings-view" class="view hidden">
           <h2 class="mb-lg">Settings</h2>
           
-          <div class="card">
-            <h3 class="card-title">Data Management</h3>
+          <div class="card mb-md">
+            <h3 class="card-title">Spreadsheet Connection</h3>
+            <p class="text-sm text-secondary mb-md">Link your data to a specific Google Spreadsheet.</p>
             
-            <div class="mb-md">
-              <button id="open-sheet-settings" class="btn btn-secondary" onclick="ui.openSpreadsheet()">
-                📊 Open Google Sheet
-              </button>
-              <p class="text-sm text-secondary mt-sm">View and edit your data directly in Google Sheets</p>
+            <div class="form-group">
+              <label class="form-label">Google Sheet ID</label>
+              <div class="flex gap-sm">
+                <input type="text" id="manual-sheet-id" class="form-input" placeholder="Enter Spreadsheet ID...">
+                <button id="link-sheet-btn" class="btn btn-primary" onclick="ui.handleLinkSheet()">Link</button>
+              </div>
+              <small class="text-secondary mt-xs block">Providing an ID helps sync data across devices.</small>
             </div>
             
+            <div class="mt-lg">
+              <button id="open-sheet-settings" class="btn btn-secondary w-full" onclick="ui.openSpreadsheet()">
+                📊 Open Current Google Sheet
+              </button>
+            </div>
+          </div>
+
+          <div class="card mb-md">
+            <h3 class="card-title">Cache & Data</h3>
+            <p class="text-sm text-secondary mb-md">Clear local storage and force a fresh reload from Google Sheets.</p>
+            
+            <button id="clear-cache-btn" class="btn btn-outline btn-danger w-full" onclick="ui.handleClearCache()">
+              🗑️ Clear Cache & Reload Data
+            </button>
+            <p class="text-xs text-secondary mt-sm">Use this if data seems out of sync or stale.</p>
+          </div>
+          
+          <div class="card">
+            <h3 class="card-title">Other</h3>
             <div class="mb-md">
-              <button id="open-drive-folder" class="btn btn-secondary" onclick="ui.openDriveFolder()">
+              <button id="open-drive-folder" class="btn btn-secondary w-full" onclick="ui.openDriveFolder()">
                 📁 Open Attachments Folder
               </button>
-              <p class="text-sm text-secondary mt-sm">View all uploaded images in Google Drive</p>
             </div>
             
             <hr style="border: none; border-top: 1px solid var(--border); margin: 1.5rem 0;">
             
             <h3 class="card-title">About</h3>
-            <p class="text-secondary">Loan Tracker v1.0</p>
+            <p class="text-secondary">Loan Tracker v1.2</p>
             <p class="text-sm text-secondary">A progressive web app for managing lending activities</p>
           </div>
         </div>

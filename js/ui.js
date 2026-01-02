@@ -68,6 +68,16 @@ class UI {
             this.loadPayments();
         } else if (viewName === 'analytics') {
             this.loadAnalytics();
+        } else if (viewName === 'settings') {
+            this.populateSettings();
+        }
+    }
+
+    // Populate settings view
+    populateSettings() {
+        const idInput = document.getElementById('manual-sheet-id');
+        if (idInput && sheetsManager.spreadsheetId) {
+            idInput.value = sheetsManager.spreadsheetId;
         }
     }
 
@@ -1656,6 +1666,53 @@ class UI {
         btn.disabled = false;
         if (btn.dataset.originalText) {
             btn.innerHTML = btn.dataset.originalText;
+        }
+    }
+
+    // Handle manual sheet linking
+    async handleLinkSheet() {
+        const idInput = document.getElementById('manual-sheet-id');
+        const id = idInput?.value.trim();
+        const btn = document.getElementById('link-sheet-btn');
+
+        if (!id) {
+            this.showToast('Please enter a valid Spreadsheet ID', 'error');
+            return;
+        }
+
+        try {
+            this.showBtnLoading(btn);
+            const sheetInfo = await sheetsManager.linkSpreadsheet(id);
+            this.showToast(`Successfully linked to: ${sheetInfo.name}`, 'success');
+
+            // Reload all data
+            await this.handleClearCache(false); // Clear cache but don't show double toasts
+        } catch (error) {
+            this.showToast(`Failed to link spreadsheet: ${error.message}`, 'error');
+        } finally {
+            this.hideBtnLoading(btn);
+        }
+    }
+
+    // Handle clear cache and reload
+    async handleClearCache(showToast = true) {
+        try {
+            if (showToast) this.showToast('Clearing cache and reloading data...', 'info');
+
+            // Clear all custom caches
+            cacheManager.clearAll();
+
+            // Force reload Sheets data (getLoans and getPayments will fetch fresh from API now)
+            await this.loadLoans();
+            await this.loadPayments();
+
+            if (showToast) this.showToast('Data re-synced from Google Sheets!', 'success');
+
+            // Redirect to loans view if we were in settings (unless called from link)
+            if (showToast) this.switchView('loans');
+        } catch (error) {
+            console.error('Error clearing cache:', error);
+            if (showToast) this.showToast('Error re-syncing data', 'error');
         }
     }
 }

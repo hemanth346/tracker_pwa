@@ -60,8 +60,8 @@ class Auth {
             return;
         }
 
-        // Request access token
-        this.tokenClient.requestAccessToken({ prompt: 'consent' });
+        // Request access token without mandatory consent for better PWA experience
+        this.tokenClient.requestAccessToken({ prompt: '' });
     }
 
     // Sign out
@@ -92,16 +92,28 @@ class Auth {
 
         if (savedUser && savedToken && tokenExpiry) {
             const expiryTime = parseInt(tokenExpiry);
-            // Check if token expires within next 15 minutes, refresh if so
-            if (Date.now() < (expiryTime - 900000)) {
+            const now = Date.now();
+
+            // Check if token is still valid (not expiring in next 5 minutes)
+            if (now < (expiryTime - 300000)) {
                 this.user = JSON.parse(savedUser);
                 this.accessToken = savedToken;
                 console.log('[Auth] Restored session from localStorage');
+
+                // Set up auto-refresh
+                this.setupAutoRefresh(expiryTime - now);
+
                 window.dispatchEvent(new CustomEvent('auth:success', { detail: this.user }));
                 return true;
             } else {
-                console.log('[Auth] Token expired or expiring soon, clearing session');
-                this.signOut();
+                console.log('[Auth] Token expired or expiring soon, attempting silent refresh');
+                // Try silent refresh if client is ready
+                if (this.tokenClient) {
+                    this.tokenClient.requestAccessToken({ prompt: '' });
+                    return true; // Assume success for UI while refreshing
+                } else {
+                    this.signOut();
+                }
             }
         }
         return false;
@@ -111,7 +123,6 @@ class Auth {
     async onAuthSuccess() {
         try {
             console.log('[Auth] Fetching user info...');
-            console.log('[Auth] Access token:', this.accessToken ? 'Present' : 'Missing');
 
             // Fetch user info
             const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -120,29 +131,43 @@ class Auth {
                 }
             });
 
-            console.log('[Auth] User info response status:', response.status);
-
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[Auth] User info error response:', errorText);
-                throw new Error(`Failed to fetch user info: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to fetch user info: ${response.status}`);
             }
 
             this.user = await response.json();
-            // console.log('[Auth] User info received:', this.user);
 
             // Save to session (token expires in 1 hour)
+            const expiresIn = 3600000;
             localStorage.setItem('user', JSON.stringify(this.user));
             localStorage.setItem('accessToken', this.accessToken);
-            localStorage.setItem('tokenExpiry', (Date.now() + 3600000).toString());
+            localStorage.setItem('tokenExpiry', (Date.now() + expiresIn).toString());
+
+            // Set up auto-refresh (5 minutes before expiry)
+            this.setupAutoRefresh(expiresIn);
 
             // Trigger success event
-            console.log('[Auth] Triggering auth:success event');
             window.dispatchEvent(new CustomEvent('auth:success', { detail: this.user }));
         } catch (error) {
             console.error('[Auth] Error in onAuthSuccess:', error);
             this.handleAuthError(error.message);
         }
+    }
+
+    setupAutoRefresh(msUntilExpiry) {
+        // Clear existing timer
+        if (this.refreshTimer) clearTimeout(this.refreshTimer);
+
+        // Refresh 5 minutes before actual expiry
+        const refreshIn = Math.max(0, msUntilExpiry - 300000);
+        console.log(`[Auth] Scheduling token refresh in ${Math.round(refreshIn / 60000)} minutes`);
+
+        this.refreshTimer = setTimeout(() => {
+            console.log('[Auth] Auto-refreshing token...');
+            if (this.tokenClient) {
+                this.tokenClient.requestAccessToken({ prompt: '' });
+            }
+        }, refreshIn);
     }
 
     // Handle authentication errors
