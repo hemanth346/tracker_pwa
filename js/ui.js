@@ -260,7 +260,11 @@ class UI {
     async loadPayments() {
         try {
             this.showLoading('payments-list');
-            const payments = await sheetsManager.getPayments();
+            const [payments, loans] = await Promise.all([
+                sheetsManager.getPayments(),
+                sheetsManager.getLoans()
+            ]);
+            this.allLoans = loans;
             this.renderPayments(payments);
         } catch (error) {
             console.error('Error loading payments:', error);
@@ -421,6 +425,17 @@ class UI {
                 const groupTitle = this.getGroupTitle(groupKey, groupBy);
                 const isExpanded = this.expandedGroups?.has(groupKey) !== false; // Default to expanded
 
+                // Calculate pending principal for the group
+                let pendingPrincipal = 0;
+                if (groupBy === 'borrower') {
+                    pendingPrincipal = this.allLoans
+                        .filter(l => l.name === groupKey && l.status === 'Active')
+                        .reduce((sum, l) => sum + (parseFloat(l.balanceAmount) || 0), 0);
+                } else if (groupBy === 'loanId') {
+                    const loan = this.allLoans.find(l => l.loanId === groupKey);
+                    pendingPrincipal = loan ? (parseFloat(loan.balanceAmount) || 0) : 0;
+                }
+
                 return `
                     <div class="payment-group" style="margin-bottom: 1rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden;">
                         <div class="payment-group-header" 
@@ -430,9 +445,10 @@ class UI {
                                 <div class="payment-group-title" style="font-weight: 500; margin-bottom: 0.25rem;">
                                     <span class="group-toggle-icon" style="margin-right: 0.5rem; font-family: monospace;">${isExpanded ? '▼' : '▶'}</span>
                                     ${this.escapeHtml(groupTitle)}
+                                    ${pendingPrincipal > 0 ? `<span style="margin-left: 0.5rem; color: var(--primary); font-size: 0.8rem; font-weight: normal;">(Pending: ₹${this.formatNumber(pendingPrincipal)})</span>` : ''}
                                 </div>
                                 <div class="payment-group-meta" style="font-size: 0.875rem; color: var(--text-secondary);">
-                                    Total: ₹${this.formatNumber(group.totalAmount)} (${group.payments.length} payment${group.payments.length !== 1 ? 's' : ''})
+                                    Received: ₹${this.formatNumber(group.totalAmount)} (${group.payments.length} payment${group.payments.length !== 1 ? 's' : ''})
                                 </div>
                             </div>
                         </div>
@@ -701,10 +717,11 @@ class UI {
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div style="flex: 1;">
                             <div style="font-weight: 500; margin-bottom: 0.5rem;">${this.escapeHtml(loan.name)}</div>
-                            <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                                <span>₹${this.formatNumber(loan.amount)}</span>
-                                <span>${loan.interestRate}% monthly</span>
-                                <span>${loan.dateGiven}</span>
+                            <div style="display: flex; gap: 1rem; font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem; flex-wrap: wrap;">
+                                <span style="font-weight: 500; color: var(--primary);">Balance: ₹${this.formatNumber(loan.balanceAmount)}</span>
+                                ${loan.balanceAmount < loan.amount ? `<span style="text-decoration: line-through; color: var(--text-secondary); opacity: 0.7;">Org: ₹${this.formatNumber(loan.amount)}</span>` : ''}
+                                <span style="background: rgba(99, 102, 241, 0.1); padding: 0 4px; border-radius: 4px;">${loan.interestRate}% Int.</span>
+                                <span>Date: ${loan.dateGiven}</span>
                                 ${loan.via ? `<span>Via: ${this.escapeHtml(loan.via)}</span>` : ''}
                             </div>
                             ${loan.details ? `<div style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 0.5rem;">${this.escapeHtml(loan.details)}</div>` : ''}
@@ -866,7 +883,11 @@ class UI {
                 
                 <div class="grid grid-2">
                     <div class="detail-group">
-                        <label>Amount Lent</label>
+                        <label>Remaining Principal</label>
+                        <div class="detail-value" style="color: var(--primary); font-weight: bold;">₹${this.formatNumber(loan.balanceAmount)}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Original Amount</label>
                         <div class="detail-value">₹${this.formatNumber(loan.amount)}</div>
                     </div>
                     <div class="detail-group">
@@ -920,6 +941,10 @@ class UI {
                     <div class="detail-group">
                         <label>Total Interest Paid</label>
                         <div class="detail-value">₹${this.formatNumber(loan.totalInterestPaid)}</div>
+                    </div>
+                    <div class="detail-group">
+                        <label>Total Principal Paid</label>
+                        <div class="detail-value">₹${this.formatNumber(loan.totalPrincipalPaid)}</div>
                     </div>
                     <div class="detail-group">
                         <label>Paid Till</label>
@@ -1131,15 +1156,16 @@ class UI {
     getPaymentTypeBadgeClass(type) {
         const typeMap = {
             'Interest': 'warning',
-            'Principal': 'info',
-            'Both': 'success'
+            'Principal': 'info'
         };
         return typeMap[type] || 'info';
     }
 
     // Helper: Format number
     formatNumber(num) {
-        return new Intl.NumberFormat('en-IN').format(num);
+        const value = parseFloat(num);
+        if (isNaN(value)) return '0';
+        return new Intl.NumberFormat('en-IN').format(value);
     }
 
     // Helper: Escape HTML

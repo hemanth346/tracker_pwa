@@ -30,7 +30,10 @@ class SheetsManager {
     // Set access token
     setAccessToken(token) {
         if (this.sheetsLoaded) {
+            console.log('[Sheets] Setting access token for GAPI client');
             gapi.client.setToken({ access_token: token });
+        } else {
+            console.warn('[Sheets] Cannot set access token: GAPI client not loaded');
         }
     }
 
@@ -93,7 +96,9 @@ class SheetsManager {
             'Last Interest Payment Date',
             'Total Interest Paid',
             'Paid Till Month',
-            'Attachments'
+            'Attachments',
+            'Total Principal Paid',
+            'Balance Amount'
         ];
 
         const paymentsHeaders = [
@@ -115,7 +120,7 @@ class SheetsManager {
                     valueInputOption: 'RAW',
                     data: [
                         {
-                            range: 'Loans!A1:O1',
+                            range: 'Loans!A1:Q1',
                             values: [loansHeaders],
                         },
                         {
@@ -205,51 +210,59 @@ class SheetsManager {
 
     // Get or create spreadsheet
     async getOrCreateSpreadsheet() {
-        // Check if we have a saved spreadsheet ID
-        const savedId = localStorage.getItem('spreadsheetId');
-        if (savedId) {
-            this.spreadsheetId = savedId;
-            // Verify it exists AND is not trashed
+        console.log('[Sheets] Starting spreadsheet setup...');
+
+        // 1. Check if we already have an ID (from localStorage or config)
+        let idToVerify = localStorage.getItem('spreadsheetId') || this.spreadsheetId;
+
+        if (idToVerify) {
+            console.log('[Sheets] Verifying existing ID:', idToVerify);
             try {
                 const response = await gapi.client.drive.files.get({
-                    fileId: this.spreadsheetId,
-                    fields: 'id, name, trashed'
+                    fileId: idToVerify,
+                    fields: 'id, name, trashed, mimeType'
                 });
 
                 if (response.result.trashed) {
-                    console.log('[Sheets] Saved spreadsheet is in trash, searching for active one...');
+                    console.log('[Sheets] Spreadsheet is in trash, will search/create new one');
                 } else {
-                    console.log('[Sheets] Found existing active spreadsheet:', this.spreadsheetId);
+                    console.log('[Sheets] Found valid active spreadsheet:', response.result.name);
+                    this.spreadsheetId = idToVerify;
+                    localStorage.setItem('spreadsheetId', this.spreadsheetId);
                     return this.spreadsheetId;
                 }
             } catch (error) {
-                console.log('[Sheets] Saved spreadsheet not found or inaccessible, searching for it...');
+                console.warn('[Sheets] Verification of ID failed:', error.result?.error?.message || error.message);
+                // Continue to search/create
             }
         }
 
-        // Search for existing active spreadsheet by name in Drive, newest first
+        // 2. Search for existing spreadsheet by name
         try {
-            console.log('[Sheets] Searching for active spreadsheet with name:', CONFIG.SPREADSHEET_NAME);
+            console.log('[Sheets] Searching Drive for spreadsheet named:', CONFIG.SPREADSHEET_NAME);
+            // We use a slightly more flexible query to ensure we find it
+            const query = `name = '${CONFIG.SPREADSHEET_NAME}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`;
             const response = await gapi.client.drive.files.list({
-                q: `name = '${CONFIG.SPREADSHEET_NAME}' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false`,
+                q: query,
                 fields: 'files(id, name, modifiedTime)',
                 spaces: 'drive',
                 orderBy: 'modifiedTime desc'
             });
 
-            const files = response.result?.files;
-            if (files && files.length > 0) {
+            const files = response.result?.files || [];
+            if (files.length > 0) {
                 this.spreadsheetId = files[0].id;
-                console.log('[Sheets] Found existing spreadsheet in Drive (most recent):', this.spreadsheetId);
+                console.log('[Sheets] Found existing spreadsheet in Drive:', files[0].name, '(', this.spreadsheetId, ')');
                 localStorage.setItem('spreadsheetId', this.spreadsheetId);
                 return this.spreadsheetId;
             }
+            console.log('[Sheets] No matching spreadsheet found in Drive search.');
         } catch (error) {
-            console.error('[Sheets] Error searching for spreadsheet:', error);
+            console.error('[Sheets] Drive search failed:', error);
         }
 
-        // Create new spreadsheet if not found
-        console.log('[Sheets] No existing non-trashed spreadsheet found, creating new one...');
+        // 3. Create new spreadsheet as last resort
+        console.log('[Sheets] Creating a new spreadsheet named:', CONFIG.SPREADSHEET_NAME);
         return await this.createSpreadsheet();
     }
 
@@ -338,7 +351,9 @@ class SheetsManager {
                 '', // Last Interest Payment Date (calculated)
                 0, // Total Interest Paid (calculated)
                 '', // Paid Till Month (calculated)
-                loanData.attachments || ''
+                loanData.attachments || '',
+                0, // Total Principal Paid (calculated)
+                loanData.amount // Balance Amount (calculated)
             ];
 
             await gapi.client.sheets.spreadsheets.values.append({
@@ -382,7 +397,7 @@ class SheetsManager {
             console.log('Fetching loans from API...');
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: this.spreadsheetId,
-                range: 'Loans!A2:O',
+                range: 'Loans!A2:Q',
             });
 
             const rows = response.result.values || [];
@@ -398,11 +413,13 @@ class SheetsManager {
                 hasProNote: row[7] === 'Yes',
                 status: row[8] || 'Active',
                 dateOfClosure: row[9] || '',
-                contacts: this.parseJSON(row[10]) || [],
+                contacts: this.parseJSON(row[10]),
                 lastPaymentDate: row[11] || '',
                 totalInterestPaid: parseFloat(row[12]) || 0,
                 paidTillMonth: row[13] || '',
-                attachments: row[14] || ''
+                attachments: row[14] || '',
+                totalPrincipalPaid: parseFloat(row[15]) || 0,
+                balanceAmount: parseFloat(row[16]) || (parseFloat(row[3]) || 0)
             }));
 
             // Cache the results
@@ -613,31 +630,36 @@ class SheetsManager {
 
             if (loanPayments.length === 0) return;
 
-            // Calculate fields
-            const lastPaymentDate = loanPayments
-                .map(p => new Date(p.paymentDate))
-                .sort((a, b) => b - a)[0]
-                .toLocaleDateString();
-
             const totalInterestPaid = loanPayments
                 .filter(p => p.paymentType === 'Interest' || p.paymentType === 'Both')
-                .reduce((sum, p) => sum + p.amount, 0);
+                .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+            const totalPrincipalPaid = loanPayments
+                .filter(p => p.paymentType === 'Principal')
+                .reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+            const balanceAmount = (parseFloat(loan.amount) || 0) - totalPrincipalPaid;
 
             // Calculate paid till month
-            const monthlyInterest = (loan.amount * loan.interestRate) / 100;
+            const monthlyInterest = ((parseFloat(loan.amount) || 0) * (parseFloat(loan.interestRate) || 0)) / 100;
             const monthsPaid = monthlyInterest > 0 ? Math.floor(totalInterestPaid / monthlyInterest) : 0;
             const startDate = new Date(loan.dateGiven);
             const paidTillDate = new Date(startDate);
             paidTillDate.setMonth(paidTillDate.getMonth() + monthsPaid);
             const paidTillMonth = paidTillDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short' });
 
+            const lastPaymentDate = loanPayments
+                .map(p => new Date(p.paymentDate))
+                .sort((a, b) => b - a)[0]
+                .toLocaleDateString();
+
             // Update the row
             await gapi.client.sheets.spreadsheets.values.update({
                 spreadsheetId: this.spreadsheetId,
-                range: `Loans!L${loan.rowIndex}:N${loan.rowIndex}`,
+                range: `Loans!L${loan.rowIndex}:Q${loan.rowIndex}`,
                 valueInputOption: 'USER_ENTERED',
                 resource: {
-                    values: [[lastPaymentDate, totalInterestPaid, paidTillMonth]],
+                    values: [[lastPaymentDate, totalInterestPaid, paidTillMonth, loan.attachments, totalPrincipalPaid, balanceAmount]],
                 },
             });
         } catch (error) {
@@ -687,12 +709,14 @@ class SheetsManager {
                 loanData.lastPaymentDate || '',
                 loanData.totalInterestPaid || 0,
                 loanData.paidTillMonth || '',
-                loanData.attachments || ''
+                loanData.attachments || '',
+                loanData.totalPrincipalPaid || 0,
+                loanData.balanceAmount || loanData.amount
             ];
 
             await gapi.client.sheets.spreadsheets.values.update({
                 spreadsheetId: this.spreadsheetId,
-                range: `Loans!A${rowIndex}:O${rowIndex}`,
+                range: `Loans!A${rowIndex}:Q${rowIndex}`,
                 valueInputOption: 'USER_ENTERED',
                 resource: {
                     values: [row],

@@ -367,7 +367,6 @@ class App {
             <select name="paymentType" class="form-select" required>
               <option value="Interest">Interest</option>
               <option value="Principal">Principal</option>
-              <option value="Both">Both</option>
             </select>
           </div>
         </div>

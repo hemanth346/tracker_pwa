@@ -20,14 +20,14 @@ class AnalyticsManager {
         const defaultedLoans = this.loans.filter(loan => loan.status === 'Defaulted');
 
         const totalAmountLent = this.loans.reduce((sum, loan) => sum + (parseFloat(loan.amount) || 0), 0);
-        const activeAmount = activeLoans.reduce((sum, loan) => sum + (parseFloat(loan.amount) || 0), 0);
+        const activeAmount = activeLoans.reduce((sum, loan) => sum + (parseFloat(loan.balanceAmount) || 0), 0);
         const totalInterestEarned = this.payments
             .filter(payment => payment.paymentType === 'Interest' || payment.paymentType === 'Both')
             .reduce((sum, payment) => sum + (parseFloat(payment.amount) || 0), 0);
 
         // Calculate expected monthly income from active loans
         const expectedMonthlyIncome = activeLoans.reduce((sum, loan) => {
-            const principal = parseFloat(loan.amount) || 0;
+            const principal = parseFloat(loan.balanceAmount) || 0;
             const rate = parseFloat(loan.interestRate) || 0;
             return sum + (principal * rate / 100);
         }, 0);
@@ -216,7 +216,7 @@ class AnalyticsManager {
         return {
             averageLoanTenure: Math.round(avgTenure * 10) / 10,
             collectionEfficiency: Math.round(collectionEfficiency * 100) / 100,
-            totalPortfolioValue: this.loans.reduce((sum, loan) => sum + (parseFloat(loan.amount) || 0), 0),
+            totalPortfolioValue: this.loans.reduce((sum, loan) => sum + (parseFloat(loan.balanceAmount) || 0), 0),
             portfolioGrowthRate: this.calculatePortfolioGrowthRate()
         };
     }

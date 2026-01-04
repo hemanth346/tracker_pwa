@@ -4,7 +4,7 @@ class CacheManager {
         this.cacheTTL = 5 * 60 * 1000; // 5 minutes in milliseconds
         this.cacheKey = 'loanTrackerCache';
         this.versionKey = 'loanTrackerCacheVersion';
-        this.currentVersion = '1.0.0';
+        this.currentVersion = '1.1.0';
     }
 
     // Initialize cache - check version compatibility
@@ -59,7 +59,7 @@ class CacheManager {
             };
 
             localStorage.setItem(this.cacheKey, JSON.stringify(cache));
-            
+
             // Trigger storage event for cross-tab synchronization
             window.dispatchEvent(new CustomEvent('cache:updated', {
                 detail: { key, data }
